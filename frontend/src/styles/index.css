@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* Tailwind v4 turns each --color-* into utilities (bg-saffron, ...)   */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-bg-deep: #0a1230;
+  --color-bg-mid: #122052;
+  --color-cream: #f7f0e1;
+  --color-sand: #e9dcc0;
+  --color-saffron: #ffb43b;
+  --color-aqua: #2de2c8;
+  --color-coral: #ff6b5b;
+  --color-violet: #8b7cff;
+  --color-ink: #0a1230;
+  /* Muted cream for secondary text on navy (contrast > 7:1 on #0A1230) */
+  --color-mist: #b9bfd6;
+
+  --font-display: "Sora", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-glass: 20px;
+
+  --animate-drift-a: drift-a 28s ease-in-out infinite alternate;
+  --animate-drift-b: drift-b 34s ease-in-out infinite alternate;
+  --animate-drift-c: drift-c 40s ease-in-out infinite alternate;
+}
+
+/* The exact token names from the design spec, for plain CSS use. */
+:root {
+  --bg-deep: var(--color-bg-deep);
+  --bg-mid: var(--color-bg-mid);
+  --cream: var(--color-cream);
+  --sand: var(--color-sand);
+  --saffron: var(--color-saffron);
+  --aqua: var(--color-aqua);
+  --coral: var(--color-coral);
+  --violet: var(--color-violet);
+  --ink: var(--color-ink);
+
+  --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+
+  color-scheme: dark;
+}
+
+@layer base {
+  /* Gradient lives on <html> (the canvas). If <body> had its own background it would
+     paint over the negative-z orb layer and hide it. */
+  html {
+    background: linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-deep) 100%) fixed var(--bg-deep);
+    scroll-behavior: smooth;
+  }
+  body {
+    min-height: 100vh;
+    margin: 0;
+    color: var(--cream);
+    font-family: var(--font-sans);
+    background: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  /* Saffron focus ring everywhere, only for keyboard focus */
+  :focus-visible {
+    outline: 2px solid var(--saffron);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+  ::selection {
+    background: rgba(255, 180, 59, 0.35);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Glass recipe                                                        */
+/* ------------------------------------------------------------------ */
+@layer components {
+  .glass,
+  .glass-light {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--radius-glass);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .glass-light {
+    background: rgba(247, 240, 225, 0.65);
+    color: var(--ink);
+  }
+  /* Frosted noise overlay at 4% */
+  .glass::before,
+  .glass-light::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: var(--noise);
+    opacity: 0.04;
+    pointer-events: none;
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass {
+      background: rgba(22, 34, 82, 0.92);
+    }
+    .glass-light {
+      background: rgba(247, 240, 225, 0.96);
+    }
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.45;
+    will-change: transform;
+  }
+}
+
+@keyframes drift-a {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(12vw, 8vh) scale(1.15); }
+}
+@keyframes drift-b {
+  0% { transform: translate(0, 0) scale(1.1); }
+  100% { transform: translate(-10vw, 12vh) scale(0.95); }
+}
+@keyframes drift-c {
+  0% { transform: translate(0, 0) scale(0.95); }
+  100% { transform: translate(8vw, -10vh) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .orb { animation: none !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

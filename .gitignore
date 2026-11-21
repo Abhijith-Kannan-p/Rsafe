@@ -1,0 +1,31 @@
+# Secrets: per-school HMAC keys and the cluster key never leave the machine
+.keys/
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local databases
+backend/*.db
+backend/*.db-journal
+*.sqlite3
+
+# Large generated datasets (the default demo CSVs in backend/data/ ARE committed)
+backend/data/perf/
+
+# Node / build
+node_modules/
+frontend/dist/
+
+# Screenshot pipeline scratch output (landing images in frontend/public/shots/ ARE committed)
+scripts/.shots-tmp/
+test-results/
+playwright-report/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

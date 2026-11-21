@@ -1,0 +1,5 @@
+code,name,district,block,cluster,status,merged_into
+SYN-0001,Govt Model School Riverside,Synthetic District,North Block,CL-01,open,
+SYN-0002,Govt UP School Hillview,Synthetic District,North Block,CL-01,open,
+SYN-0003,Govt High School Lakeside,Synthetic District,North Block,CL-01,open,
+SYN-0004,Govt LP School Old Town,Synthetic District,North Block,CL-01,merged,SYN-0001

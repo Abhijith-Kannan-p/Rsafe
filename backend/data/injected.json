@@ -1,0 +1,198 @@
+{
+  "synthetic": true,
+  "seed": 20261125,
+  "reference_date": "2026-11-16",
+  "academic_year": "2026-27",
+  "students_total": 183,
+  "injected": [
+    {
+      "rule": "STU-001",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0002",
+      "note": "digit inside name"
+    },
+    {
+      "rule": "STU-001",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0019",
+      "note": "stray symbol"
+    },
+    {
+      "rule": "STU-001",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0038",
+      "note": "name missing"
+    },
+    {
+      "rule": "STU-002",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0024",
+      "note": "dob missing"
+    },
+    {
+      "rule": "STU-002",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0021",
+      "note": "impossible date 31 Feb"
+    },
+    {
+      "rule": "STU-002",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0029",
+      "note": "unparseable format"
+    },
+    {
+      "rule": "STU-002",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0052",
+      "note": "age 3 in class 8 (outside age band)"
+    },
+    {
+      "rule": "STU-003",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0039",
+      "note": "gender missing"
+    },
+    {
+      "rule": "STU-003",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0043",
+      "note": "gender F vs prior year M"
+    },
+    {
+      "rule": "STU-003",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0035",
+      "note": "gender M vs prior year F"
+    },
+    {
+      "rule": "STU-004",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0004",
+      "note": "aadhaar missing"
+    },
+    {
+      "rule": "STU-004",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0047",
+      "note": "aadhaar marked update pending"
+    },
+    {
+      "rule": "STU-004",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0036",
+      "note": "aadhaar marked update pending"
+    },
+    {
+      "rule": "STU-005",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0029",
+      "note": "register says 'Ananya R. Kumar'"
+    },
+    {
+      "rule": "STU-005",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0013",
+      "note": "register says 'Arjun R. Kumar'"
+    },
+    {
+      "rule": "STU-006",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0008",
+      "note": "duplicate of SYN-0003-S0061 (same ID, name, DOB)"
+    },
+    {
+      "rule": "STU-006",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0061",
+      "note": "duplicate of SYN-0003-S0008"
+    },
+    {
+      "rule": "STU-007",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0033",
+      "note": "also enrolled at SYN-0002 as SYN-0002-S0061"
+    },
+    {
+      "rule": "STU-007",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0061",
+      "note": "also enrolled at SYN-0001 as SYN-0001-S0033"
+    },
+    {
+      "rule": "STU-007",
+      "entity": "student",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-S0053",
+      "note": "also enrolled at SYN-0003 as SYN-0003-S0062"
+    },
+    {
+      "rule": "STU-007",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0062",
+      "note": "also enrolled at SYN-0002 as SYN-0002-S0053"
+    },
+    {
+      "rule": "STU-008",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0024",
+      "note": "marked dropout but recent attendance record"
+    },
+    {
+      "rule": "STU-008",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0021",
+      "note": "marked dropout but recent attendance record"
+    },
+    {
+      "rule": "STU-008",
+      "entity": "student",
+      "school_code": "SYN-0003",
+      "ref": "SYN-0003-S0021",
+      "note": "marked dropout but recent fee record"
+    },
+    {
+      "rule": "SYS-001",
+      "entity": "student",
+      "school_code": "SYN-0001",
+      "ref": "SYN-0001-S0055",
+      "note": "came from merged SYN-0004 with no transfer status"
+    },
+    {
+      "rule": "TCH-001",
+      "entity": "teacher",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-T01",
+      "note": "qualified in Mathematics, assigned Hindi for class 7A"
+    },
+    {
+      "rule": "FAC-001",
+      "entity": "facility",
+      "school_code": "SYN-0002",
+      "ref": "SYN-0002-F-toilet_girls",
+      "note": "marked functional, maintenance log on 03/11/2026 says broken"
+    }
+  ]
+}

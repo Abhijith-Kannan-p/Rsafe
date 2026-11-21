@@ -1,0 +1,15 @@
+{
+  "name": "rsafe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Rsafe: pre-submission checks for school records (prototype, synthetic data only)",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "node scripts/task.mjs test",
+    "seed": "node scripts/task.mjs seed",
+    "screenshots": "node scripts/task.mjs screenshots",
+    "build": "npm --prefix frontend run build",
+    "typecheck": "npm --prefix frontend run typecheck"
+  }
+}

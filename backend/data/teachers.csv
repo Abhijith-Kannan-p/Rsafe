@@ -1,0 +1,25 @@
+teacher_ref,school_code,name,subjects
+SYN-0001-T01,SYN-0001,Sanjay Nair,Mathematics;Hindi
+SYN-0001-T02,SYN-0001,Uma Verma,Science
+SYN-0001-T03,SYN-0001,Yash Menon,English;Social Science
+SYN-0001-T04,SYN-0001,Harini Bose,Hindi
+SYN-0001-T05,SYN-0001,Varun Varghese,Social Science
+SYN-0001-T06,SYN-0001,Karthik Gupta,Malayalam
+SYN-0001-T07,SYN-0001,Shreya Patel,Mathematics;Science
+SYN-0001-T08,SYN-0001,Nikhil Sharma,Science
+SYN-0002-T01,SYN-0002,Manoj Varghese,Mathematics
+SYN-0002-T02,SYN-0002,Bharat Gupta,Science;Hindi
+SYN-0002-T03,SYN-0002,Riya Shetty,English
+SYN-0002-T04,SYN-0002,Sneha Bose,Hindi;Malayalam
+SYN-0002-T05,SYN-0002,Fathima Shetty,Social Science;Hindi
+SYN-0002-T06,SYN-0002,Meera Khan,Malayalam
+SYN-0002-T07,SYN-0002,Isha Thomas,Mathematics
+SYN-0002-T08,SYN-0002,Akash Patel,Science;Hindi
+SYN-0003-T01,SYN-0003,Vaishnavi Shetty,Mathematics;Social Science
+SYN-0003-T02,SYN-0003,Harsh Shetty,Science
+SYN-0003-T03,SYN-0003,Aarav Verma,English
+SYN-0003-T04,SYN-0003,Vishnu Rao,Hindi;Mathematics
+SYN-0003-T05,SYN-0003,Harsh Joshi,Social Science;Science
+SYN-0003-T06,SYN-0003,Vaishnavi Pillai,Malayalam;Hindi
+SYN-0003-T07,SYN-0003,Tanvi Pillai,Mathematics
+SYN-0003-T08,SYN-0003,Naveen Bose,Science;English
