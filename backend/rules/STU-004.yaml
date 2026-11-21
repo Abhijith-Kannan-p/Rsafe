@@ -1,0 +1,14 @@
+id: STU-004
+version: "1.0.0"
+title: Aadhaar missing or update pending
+severity: high
+entity: student
+check: aadhaar_present
+addresses: Missing Aadhaar
+message: >
+  The student has no Aadhaar number on record, or the number is marked
+  "update pending". Records like this are commonly held back at submission.
+fix: >
+  Collect the Aadhaar number from the parent, or help the family complete the
+  pending update at an enrolment centre, then record the new status. Rsafe does
+  not verify Aadhaar with UIDAI.

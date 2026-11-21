@@ -1,0 +1,13 @@
+id: STU-003
+version: "1.0.0"
+title: Gender missing or different from last year
+severity: medium
+entity: student
+check: gender_consistent
+addresses: Gender discrepancy
+message: >
+  The gender field is blank, has an unrecognised value, or does not match the
+  student's record from the previous year.
+fix: >
+  Confirm the gender with the admission register or the student's documents,
+  then correct whichever record is wrong. Rsafe does not change it for you.

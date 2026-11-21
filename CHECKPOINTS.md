@@ -75,3 +75,55 @@ proxy, and headless Edge screenshots of `/` and `/styleguide` render correctly (
 - The light glass card looks grey-lavender over navy at exactly 65% cream; worth tuning by eye with the real
   screens in Phase 5.
 - Lighthouse has not been run yet (Phase 8).
+
+---
+
+## Phase 2: Rule engine (2026-11-22)
+
+### What works
+- **YAML loader** (`backend/app/services/rules.py`): one file per rule, validated by a strict Pydantic schema
+  (`id`, `version` semver, `title`, `severity`, `entity`, `scope`, `check`, `message`, `fix`, `addresses`,
+  `params`). Unknown keys, unknown check names, bad severities, a file name that doesn't match the id, a
+  record/dataset scope mismatch, invalid YAML or an empty folder all raise `RuleLoadError` naming the file.
+  Rules load at API startup, so a broken rule stops the server rather than being skipped.
+- **Check registry** (`checks.py`): named functions; a check returns `Finding`s with a specific
+  plain-language `detail`, `evidence`, an optional `confidence` note and an optional `suggested_value`.
+  Checks never modify records.
+- **Engine** (`engine.py`): runs rules and returns issues stamped with rule id and **version**, sorted by
+  severity. A simple, explainable `readiness_score` (refined in Phase 5).
+- **Ingest** (`ingest.py`): the privacy boundary. Raw Aadhaar is read and dropped here; only the last 4
+  digits are kept. Phase 3 adds the HMAC token at this same point.
+- **Rules STU-001 to STU-004**:
+  | Rule | Catches | Suggests a value? |
+  |---|---|---|
+  | STU-001 name | missing, digits, symbols, extra spaces; Indic scripts allowed | yes for symbols/spaces; no when a digit may hide a letter |
+  | STU-002 DOB | missing, impossible date, wrong format, future, age outside class+4..class+8 on 30 Sep | yes for valid YYYY-MM-DD |
+  | STU-003 gender | blank, unrecognised value, differs from prior year | prior-year value when blank; never on a mismatch |
+  | STU-004 Aadhaar | no number, "update pending", status says missing but number present | no; evidence is masked `XXXX XXXX 1234` |
+- `GET /api/rules` and `GET /api/rules/{id}` (with YAML source), read-only. Admin-only restriction comes in Phase 4.
+
+### How to verify
+```
+npm run test                 # expect: 74 passed
+cd backend && .venv\Scripts\python -m pytest -q tests/test_rules_ground_truth.py   # precision/recall vs injected.json
+npm run dev                  # then open http://127.0.0.1:5173/api/rules
+```
+- `test_rules_ground_truth.py` runs the four rules on the seeded data and requires the flagged records to equal
+  the injected ones exactly (no misses, no false positives).
+- Measured: **5,004 students validated in 53 ms** with the four rules (about 11 ms per 1,000 records;
+  load from CSV 86 ms). Windows laptop, Python 3.13. Re-measured with all rules in Phase 8.
+
+### Decisions taken (ambiguities)
+- **Age band** = class + 4 to class + 8 years on 30 Sep of the academic year (class 1 means 5 to 9). Lenient on
+  purpose to avoid flagging late admissions; adjustable in `STU-002.yaml` `params`.
+- **Dates must be DD/MM/YYYY.** A valid ISO date is flagged with a converted suggestion rather than accepted.
+- **Gender accepts M/F/T** (UDISE+ includes Transgender) and common words (Male, girl, ...).
+- **One severity per rule**, set in YAML. Findings do not override it.
+- **Issues carry `detail` separately from `message`**: `message` is the rule's general reason; `detail`
+  says what is wrong with this record. The `Issue` table gets a `detail` column when issues are persisted
+  (Phase 4). The empty `rsafe.db` from Phase 1 was deleted; it is recreated on start.
+
+### Known gaps
+- Issues are computed in memory; they are persisted (and acted on) in Phase 4.
+- Readiness score formula is a placeholder until the dashboard (Phase 5).
+- The perf dataset keeps the same fixed number of injected problems, so it is mostly clean records.

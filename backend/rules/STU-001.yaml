@@ -1,0 +1,15 @@
+id: STU-001
+version: "1.0.0"
+title: Student name missing or malformed
+severity: high
+entity: student
+check: name_wellformed
+addresses: Name or spelling mismatch
+message: >
+  The student's name is missing or contains digits, symbols or extra spaces.
+  Names like this are often rejected when matched against Aadhaar or the
+  previous year's record.
+fix: >
+  Check the name against the admission register or the birth certificate and
+  correct it. Use letters only, with single spaces; dots, apostrophes and
+  hyphens are allowed.

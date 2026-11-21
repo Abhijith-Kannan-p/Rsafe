@@ -11,11 +11,15 @@ from . import __version__
 from .config import CORS_ORIGINS, SYNTHETIC_NOTICE
 from .db import init_db
 from .roles import ROLE_LABELS
+from .routes import rules as rules_routes
+from .services.rules import load_rules
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(app: FastAPI):
     init_db()
+    # A malformed rule raises RuleLoadError here and stops startup: no silent skips.
+    app.state.rules = load_rules()
     yield
 
 
@@ -28,6 +32,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(rules_routes.router)
 
 
 @app.get("/api/health")

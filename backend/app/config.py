@@ -13,7 +13,10 @@ RULES_DIR = BACKEND_DIR / "rules"
 # Per-school HMAC keys and the cluster key live here (git-ignored). Used from Phase 3.
 KEYS_DIR = Path(os.environ.get("RSAFE_KEYS_DIR", REPO_DIR / ".keys"))
 
-DATABASE_URL = os.environ.get("RSAFE_DATABASE_URL", f"sqlite:///{BACKEND_DIR / 'rsafe.db'}")
+# Academic year 2026-27. Ages are measured on 30 Sep of this year.
+ACADEMIC_YEAR_START = int(os.environ.get("RSAFE_ACADEMIC_YEAR_START", "2026"))
+
+DATABASE_URL =os.environ.get("RSAFE_DATABASE_URL", f"sqlite:///{BACKEND_DIR / 'rsafe.db'}")
 
 # Signs the demo-role session cookie. A fixed dev default is fine for a local prototype.
 SESSION_SECRET = os.environ.get("RSAFE_SESSION_SECRET", "rsafe-local-dev-only-not-a-secret")

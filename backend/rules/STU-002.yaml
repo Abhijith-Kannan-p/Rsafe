@@ -1,0 +1,18 @@
+id: STU-002
+version: "1.0.0"
+title: Date of birth missing, unreadable or outside the age band
+severity: high
+entity: student
+check: dob_valid
+addresses: Date of birth problems
+params:
+  # Age on 30 September of the academic year must fall within
+  # [class + min_offset, class + max_offset]. Class 1 -> ages 5 to 9.
+  min_offset: 4
+  max_offset: 8
+message: >
+  The date of birth is missing, cannot be read as a real date, or gives an age
+  that does not fit the student's class.
+fix: >
+  Enter the date of birth from the birth certificate or the admission register,
+  in DD/MM/YYYY format. If the date is right, check whether the class is wrong.
