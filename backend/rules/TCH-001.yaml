@@ -1,0 +1,13 @@
+id: TCH-001
+version: "1.0.0"
+title: Teacher assigned outside their subject
+severity: medium
+entity: teacher
+check: teacher_subject_match
+addresses: Teacher data mismatch
+message: >
+  A teacher is assigned to teach a subject that is not among the subjects they
+  are qualified in.
+fix: >
+  Either update the teacher's qualified subjects if the record is out of date,
+  or correct the class assignment.

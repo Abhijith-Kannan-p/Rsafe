@@ -38,8 +38,10 @@ class Student(SQLModel, table=True):
     class_grade: Optional[int] = None
     section: str = ""
     guardian_name: str = ""
-    aadhaar_token: Optional[str] = Field(default=None, index=True)
+    aadhaar_token: Optional[str] = Field(default=None, index=True)  # HMAC(school key), base32
+    match_token: Optional[str] = Field(default=None, index=True)  # HMAC(cluster match key), base32
     aadhaar_last4: Optional[str] = None
+    aadhaar_problem: Optional[str] = None  # e.g. invalid_length (the raw value itself is never kept)
     aadhaar_status: str = ""  # verified | missing | update_pending
     enrolment_status: str = "active"  # active | dropout | transferred
     previous_school_code: str = ""
@@ -121,9 +123,13 @@ class Issue(SQLModel, table=True):
     entity: str  # student | teacher | facility
     entity_ref: str
     school_code: str = Field(index=True)
+    title: str = ""
     message: str
+    detail: str = ""
     fix: str
     confidence: Optional[str] = None
+    suggested_value: Optional[str] = None
+    suggested_field: Optional[str] = None
     evidence: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     status: str = "open"  # open | approved | edited | held
     created_at: datetime = Field(default_factory=utcnow)

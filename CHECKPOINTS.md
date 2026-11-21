@@ -127,3 +127,60 @@ npm run dev                  # then open http://127.0.0.1:5173/api/rules
 - Issues are computed in memory; they are persisted (and acted on) in Phase 4.
 - Readiness score formula is a placeholder until the dashboard (Phase 5).
 - The perf dataset keeps the same fixed number of injected problems, so it is mostly clean records.
+
+---
+
+## Phase 3: Remaining rules, tokens, duplicates, privacy (2026-11-22)
+
+### What works
+- **Keys** (`app/services/keys.py`): a random 32-byte key per school (`.keys/school_<code>.key`) and a cluster
+  master secret (`.keys/cluster_master.key`). Each cluster's match key is derived from the master
+  (`HMAC(master, "rsafe/match-key/v1/" + cluster)`), never stored. Created on first use; `.keys/` is git-ignored.
+- **Tokens** (`app/services/tokens.py`): school token `HMAC_SHA256(school_key, id)` and match token
+  `HMAC_SHA256(cluster_match_key, id)`, base32 (52 chars, a-z and 2-7). Accepts `0123 4567 8901` and
+  `0123-4567-8901` forms; anything that is not exactly 12 digits gets no token and is flagged by STU-004.
+- **Ingest** now computes both tokens at the privacy boundary and drops the raw ID.
+- **Seed builds the database:** `npm run seed` writes the CSVs and rebuilds `backend/rsafe.db` through ingest
+  (`app/services/loader.py`). `--no-db` writes CSVs only.
+- **Rules added** (11 total, all v1.0.0):
+  | Rule | Catches | Notes |
+  |---|---|---|
+  | STU-005 | name differs from admission register | word order, missing initial, spelling; confidence from similarity; register spelling offered, never applied |
+  | STU-006 | same student twice in one school | by school token; name+DOB fallback (medium confidence) only when a token is missing |
+  | STU-007 | same student in two schools | by match token only; shows token (6 chars), last 4, both schools and refs; never the other school's name |
+  | STU-008 | dropout with attendance or a fee in the last 30 days | rule has `hold: true`, so issues are created **held** |
+  | TCH-001 | teacher assigned a subject they are not qualified in | one issue per bad assignment |
+  | FAC-001 | facility status vs latest maintenance log entry | both directions (functional but broken; non-functional but repaired) |
+  | SYS-001 | came from a closed/merged school with no transfer status; or still active in a closed school | suggests `transferred_in` |
+- New rule field `hold` (default false); issues carry `held`.
+
+### How to verify
+```
+npm run test        # expect: 145 passed
+npm run seed        # rebuilds rsafe.db; prints row counts; creates .keys/ on first run
+```
+- `tests/test_rules_ground_truth.py`: all 11 rules on the seeded data, flags must equal `injected.json` exactly.
+- `tests/test_privacy.py`: confirms the input CSV does contain IDs, then loads it and checks that no 12-digit number
+  (plain, spaced or dashed) and none of the seeded IDs appear in any table, in the raw `.db` file bytes,
+  or in any GET API response.
+- `tests/test_tokens.py`: determinism, per-school separation, cross-school agreement inside a cluster,
+  separation between clusters, key persistence, key-name sanitising, `.keys/` git-ignored.
+- Measured on 5,004 students with all 11 rules: **validation 99 ms** (about 20 ms per 1,000 records);
+  reading CSVs and tokenising 695 ms. Zero false positives at that scale.
+
+### Decisions taken (ambiguities)
+- **Two tokens per student** rather than one: the per-school token keeps schools' tokens unlinkable, and
+  the cluster match token is what enables cross-school matching. Both are stored with the last 4 digits.
+- **Base32 tokens, not hex.** Hex SHA-256 strings contain a 12-digit run about 17% of the time, which would
+  make "no 12-digit number anywhere" untestable.
+- **Word-order differences are flagged** by STU-005 ("Kumar Ananya" vs "Ananya Kumar"), because matching
+  compares strings. Case, dots and spacing alone are not flagged.
+- **STU-007 never shows the other school's student name**, only the school code and the record ref.
+- **STU-008 activity window is 30 days** (`params.window_days`). Only days marked present count.
+- **Readiness score** (still the placeholder) is computed over student issues only.
+- The privacy design and its limits are now written up in `README.md`.
+
+### Known gaps
+- Issues are still computed in memory; Phase 4 persists them and adds approve, edit and hold actions with the audit log.
+- No Verhoeff checksum on IDs (synthetic IDs would fail it); the README says Rsafe does not verify Aadhaar.
+- One machine holds both school and cluster keys (prototype limitation, documented).

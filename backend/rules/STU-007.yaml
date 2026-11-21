@@ -1,0 +1,16 @@
+id: STU-007
+version: "1.0.0"
+title: Same student enrolled in two schools
+severity: high
+entity: student
+scope: dataset
+check: duplicate_across_schools
+addresses: Duplicate enrolment
+message: >
+  A student with the same Aadhaar number is enrolled at another school. The
+  match uses a keyed token, not the raw number and not the name, so it works
+  even when the name is written differently.
+fix: >
+  Contact the other school through the cluster coordinator to find out where the
+  student actually studies. The school the student has left should mark them as
+  transferred out.

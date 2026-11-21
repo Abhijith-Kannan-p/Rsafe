@@ -1,0 +1,18 @@
+id: STU-005
+version: "1.0.0"
+title: Name spelled differently from the admission register
+severity: medium
+entity: student
+check: name_matches_register
+addresses: Name or spelling mismatch
+params:
+  # Token-sorted similarity thresholds used for the confidence note.
+  high: 0.8
+  medium: 0.5
+message: >
+  The name in this record is not spelled the same way as in the school's
+  admission register. Spelling differences are a common reason records fail to
+  match. Rsafe only flags this; it never changes a name by itself.
+fix: >
+  Check the birth certificate or Aadhaar card and use the same spelling in both
+  places. The register spelling is offered as a suggestion that you must approve.

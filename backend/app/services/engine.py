@@ -28,6 +28,7 @@ class IssueResult:
     confidence: str | None = None
     suggested_value: str | None = None
     suggested_field: str | None = None
+    held: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -55,6 +56,7 @@ def _issue(rule: RuleSpec, rec: dict, f: Finding) -> IssueResult:
         confidence=f.confidence,
         suggested_value=f.suggested_value,
         suggested_field=f.field,
+        held=rule.hold,
     )
 
 

@@ -1,0 +1,18 @@
+id: STU-008
+version: "1.0.0"
+title: Dropout flag contradicted by recent activity
+severity: high
+entity: student
+check: dropout_with_activity
+addresses: Wrong dropout or closure status
+hold: true
+params:
+  window_days: 30
+message: >
+  This student is marked as a dropout, but attendance or fee records show recent
+  activity. Marking a child who still attends as a dropout can cut them off from
+  benefits, so the flag is held and not applied until a person reviews it.
+fix: >
+  Speak to the class teacher and the family. If the student still attends, set
+  the status back to active. If they have really left, record the reason and the
+  last day attended, then release the hold.

@@ -39,6 +39,7 @@ class RuleSpec(BaseModel):
     message: str = Field(min_length=3)  # plain language, shown to the school
     fix: str = Field(min_length=3)  # suggested action
     addresses: str | None = None  # the government-reported failure reason this rule targets
+    hold: bool = False  # True: issues start as "held" and the flagged change is NOT applied until reviewed
     params: dict[str, Any] = Field(default_factory=dict)
     source: str = ""  # raw YAML, kept for the read-only Rules screen
 

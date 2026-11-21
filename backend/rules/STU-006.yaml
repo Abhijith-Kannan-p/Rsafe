@@ -1,0 +1,15 @@
+id: STU-006
+version: "1.0.0"
+title: Same student entered twice in one school
+severity: high
+entity: student
+scope: dataset
+check: duplicate_in_school
+addresses: Duplicate enrolment
+message: >
+  The same student appears more than once in this school's records. Duplicate
+  entries inflate enrolment and can block the submission.
+fix: >
+  Keep the entry that matches the admission register and remove or merge the
+  other one. If they really are two children, correct the Aadhaar number on the
+  wrong record.

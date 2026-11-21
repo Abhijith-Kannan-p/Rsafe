@@ -1,0 +1,14 @@
+id: SYS-001
+version: "1.0.0"
+title: Transfer status missing after a school closure or merger
+severity: high
+entity: student
+check: transfer_after_closure
+addresses: School closure or merger gaps
+message: >
+  This student came from a school that has been closed or merged, but the
+  transfer has not been recorded. Students like this can disappear from both
+  schools' counts.
+fix: >
+  Record the transfer status (for example "transferred in") using the closure or
+  merger order, so the student is counted at the new school.

@@ -1,0 +1,14 @@
+id: FAC-001
+version: "1.0.0"
+title: Facility status contradicts the maintenance log
+severity: medium
+entity: facility
+check: facility_matches_log
+addresses: Facility data mismatch
+message: >
+  The facility's reported status does not match the latest entry in the school's
+  maintenance log, for example a toilet reported as functional that the log says
+  is broken.
+fix: >
+  Inspect the facility and report its actual condition. If it has been repaired,
+  add a maintenance log entry saying so.

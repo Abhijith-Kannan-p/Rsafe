@@ -417,10 +417,18 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--per-school", type=int, default=60)
     parser.add_argument("--out", type=Path, default=Path(__file__).parent / "data")
+    parser.add_argument("--no-db", action="store_true", help="only write CSVs, do not rebuild rsafe.db")
     args = parser.parse_args()
 
     ds = generate(args.seed, args.per_school)
     write_dataset(ds, args.out, args.seed)
+    if not args.no_db:
+        from app.db import engine
+        from app.services.loader import load_into_db
+
+        counts = load_into_db(args.out, engine)
+        print(f"Database rebuilt ({engine.url}): " + ", ".join(f"{k} {v}" for k, v in counts.items()))
+        print("  stored per student: two keyed tokens + last 4 digits. No raw Aadhaar.")
     affected = len({i.ref for i in ds.injected if i.entity == "student"})
     print(f"Synthetic data written to {args.out}")
     print(f"  schools: {len(ds.schools)}  students: {len(ds.students)}  teachers: {len(ds.teachers)}  "
