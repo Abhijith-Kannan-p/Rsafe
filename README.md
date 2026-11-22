@@ -39,7 +39,8 @@ any of the seeded IDs appears.
 - The cluster match key is derived from a cluster master secret: `HMAC(master, "rsafe/match-key/v1/" + cluster_id)`.
   Every school in a cluster computes the same match token for the same child, so the platform can find
   cross-school duplicates by comparing tokens, never numbers or names.
-- Tokens are base32, so they can never contain something that looks like a 12-digit ID.
+- Tokens are base32 (letters and the digits 2-7 only), so unlike hex they don't produce
+  number runs that could be mistaken for, or hide, an ID.
 - Screens show only the first 6 characters of a token and the last 4 digits.
 
 **Limits, stated honestly:**

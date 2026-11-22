@@ -9,9 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from .. import models as m
+from . import audit
 from .ingest import _int_or_none, load_dataset, read_csv
 from .tokens import Tokenizer
 
@@ -50,4 +51,18 @@ def load_into_db(data_dir: Path, engine: Engine, tokenizer: Tokenizer | None = N
                                for r in read_csv(d / "attendance.csv")])
         add_all("fees", [m.FeeRecord(**_pick(m.FeeRecord, r | {"amount": int(r["amount"])})) for r in read_csv(d / "fees.csv")])
         s.commit()
+        audit.append(s, "System (seed)", "system", "data.load", str(data_dir.name),
+                     {"synthetic": True, "counts": counts})
     return counts
+
+
+def seed_and_validate(data_dir: Path, engine: Engine, tokenizer: Tokenizer | None = None) -> dict:
+    """Load the CSVs, then run every rule once for every open school, as the system user."""
+    from .rules import load_rules
+    from .validation import run_validation
+
+    counts = load_into_db(data_dir, engine, tokenizer)
+    with Session(engine) as s:
+        schools = [x.code for x in s.exec(select(m.School).where(m.School.status == "open").order_by(m.School.code))]
+        result = run_validation(s, load_rules(), schools, "System (seed)", "system")
+    return {"counts": counts, "validation": result}

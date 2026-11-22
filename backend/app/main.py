@@ -6,17 +6,38 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect
 
 from . import __version__
 from .config import CORS_ORIGINS, SYNTHETIC_NOTICE
-from .db import init_db
+from .db import engine, init_db
+from .models import SQLModel
 from .roles import ROLE_LABELS
+from .routes import audit as audit_routes
+from .routes import issues as issue_routes
 from .routes import rules as rules_routes
+from .routes import session as session_routes
 from .services.rules import load_rules
+
+
+def check_schema() -> None:
+    """Fail fast with a clear hint if rsafe.db was built by an older version."""
+    insp = inspect(engine)
+    for table in SQLModel.metadata.sorted_tables:
+        if not insp.has_table(table.name):
+            continue
+        have = {c["name"] for c in insp.get_columns(table.name)}
+        missing = set(table.columns.keys()) - have
+        if missing:
+            raise RuntimeError(
+                f"Database schema is out of date (table {table.name} lacks {sorted(missing)}). "
+                "Run `npm run seed` to rebuild it."
+            )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    check_schema()
     init_db()
     # A malformed rule raises RuleLoadError here and stops startup: no silent skips.
     app.state.rules = load_rules()
@@ -33,7 +54,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+app.include_router(session_routes.router)
+app.include_router(issue_routes.router)
+app.include_router(audit_routes.router)
 app.include_router(rules_routes.router)
 
 

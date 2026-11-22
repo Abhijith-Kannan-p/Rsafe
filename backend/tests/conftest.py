@@ -21,3 +21,38 @@ def client():
 
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture(scope="session")
+def seed_dir(tmp_path_factory):
+    import seed
+
+    out = tmp_path_factory.mktemp("seed-data")
+    seed.write_dataset(seed.generate(), out, seed.DEFAULT_SEED)
+    return out
+
+
+@pytest.fixture
+def seeded_db(seed_dir):
+    """Fresh copy of the demo database (in-memory app engine), validated once by the system user."""
+    from app.db import engine
+    from app.services.loader import seed_and_validate
+
+    return seed_and_validate(seed_dir, engine)
+
+
+@pytest.fixture
+def db(seeded_db):
+    from sqlmodel import Session
+
+    from app.db import engine
+
+    with Session(engine) as s:
+        yield s
+
+
+def login(client, role, school_code=None):
+    body = {"role": role} | ({"school_code": school_code} if school_code else {})
+    r = client.post("/api/session", json=body)
+    assert r.status_code == 200, r.text
+    return r.json()

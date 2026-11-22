@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from ..config import ACADEMIC_YEAR_START
+from ..config import ACADEMIC_YEAR_START, REFERENCE_DATE
 
 DATE_RE = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 
@@ -32,7 +32,7 @@ def _truthy(v: Any) -> bool:
 @dataclass
 class Context:
     academic_year_start: int = ACADEMIC_YEAR_START
-    today: date = field(default_factory=date.today)
+    today: date = REFERENCE_DATE
     prior_year: dict[str, dict[str, Any]] = field(default_factory=dict)  # student_ref -> row
     admission_register: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)  # (school, adm_no)
     attendance: dict[str, list[date]] = field(default_factory=dict)  # student_ref -> sorted days present

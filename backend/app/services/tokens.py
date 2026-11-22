@@ -3,8 +3,10 @@
     school token = HMAC_SHA256(school_key, normalised_aadhaar)         within-school duplicates
     match token  = HMAC_SHA256(cluster_match_key, normalised_aadhaar)  cross-school duplicates
 
-Tokens are base32 (a-z, 2-7), 52 characters. Base32 rather than hex so a token can never
-look like, or contain, a 12-digit number.
+Tokens are base32 (a-z, 2-7), 52 characters. Base32 rather than hex because a hex SHA-256
+string contains a 12-digit run about 17% of the time. Base32 tokens use only the digits 2-7,
+so they cannot contain a synthetic ID (those start with 0), and a 12-digit run is
+astronomically unlikely and would still be glued to letters.
 
 Limits (also in the README): a 12-digit ID space is small enough that anyone holding a key
 can brute-force a token back to the number. Tokens are pseudonyms that protect IDs only

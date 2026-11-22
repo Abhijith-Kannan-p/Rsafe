@@ -424,11 +424,15 @@ def main() -> None:
     write_dataset(ds, args.out, args.seed)
     if not args.no_db:
         from app.db import engine
-        from app.services.loader import load_into_db
+        from app.services.loader import seed_and_validate
 
-        counts = load_into_db(args.out, engine)
-        print(f"Database rebuilt ({engine.url}): " + ", ".join(f"{k} {v}" for k, v in counts.items()))
+        result = seed_and_validate(args.out, engine)
+        print(f"Database rebuilt ({engine.url.database}): "
+              + ", ".join(f"{k} {v}" for k, v in result["counts"].items()))
         print("  stored per student: two keyed tokens + last 4 digits. No raw Aadhaar.")
+        for sch in result["validation"]["schools"]:
+            print(f"  {sch['school_code']}: readiness {sch['readiness']}%, {sch['active']} active issues "
+                  f"({sch['held']} held)")
     affected = len({i.ref for i in ds.injected if i.entity == "student"})
     print(f"Synthetic data written to {args.out}")
     print(f"  schools: {len(ds.schools)}  students: {len(ds.students)}  teachers: {len(ds.teachers)}  "

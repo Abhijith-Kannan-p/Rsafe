@@ -14,7 +14,7 @@ from sqlmodel import SQLModel
 import seed
 from app.db import engine as app_engine
 from app.db import make_engine
-from app.services.loader import load_into_db
+from app.services.loader import load_into_db, seed_and_validate
 
 # A 12-digit run not glued to other letters/digits, or the spaced/dashed 4-4-4 form.
 TWELVE = re.compile(r"(?<![0-9A-Za-z])\d{12}(?![0-9A-Za-z])|\b\d{4}[ -]\d{4}[ -]\d{4}\b")
@@ -62,21 +62,27 @@ def test_database_has_no_raw_ids(seeded, tmp_path):
 
 
 def test_api_responses_have_no_raw_ids(seeded, client):
+    """Signed in as every role, call every parameter-free GET route plus every issue and rule detail."""
     out, raw_ids = seeded
-    load_into_db(out, app_engine)  # the app's (in-memory) database
+    seed_and_validate(out, app_engine)  # the app's (in-memory) database
 
+    # Enumerate from the OpenAPI schema: app.routes does not list routes added via include_router.
+    paths = client.app.openapi()["paths"]
+    get_paths = [p for p, ops in paths.items() if "get" in ops and p.startswith("/api") and "{" not in p]
+    assert {"/api/issues", "/api/audit", "/api/summary", "/api/rules", "/api/session"} <= set(get_paths)
     bodies = []
-    for route in client.app.routes:
-        methods = getattr(route, "methods", set())
-        path = getattr(route, "path", "")
-        if "GET" in methods and path.startswith("/api") and "{" not in path:
+    for role in ["principal", "teacher", "mis_coordinator", "admin", "student_parent"]:
+        assert client.post("/api/session", json={"role": role}).status_code == 200
+        for path in get_paths:
             r = client.get(path)
             assert r.status_code < 500, path
             bodies.append(r.text)
-    for rule in client.get("/api/rules").json():
-        bodies.append(client.get(f"/api/rules/{rule['id']}").text)
+        for issue in client.get("/api/issues").json():
+            bodies.append(client.get(f"/api/issues/{issue['id']}").text)
+        for rule in client.get("/api/rules").json():
+            bodies.append(client.get(f"/api/rules/{rule['id']}").text)
 
     blob = "\n".join(bodies)
-    assert len(bodies) >= 3
+    assert len(bodies) > 100 and '"rule_id"' in blob and '"short_hash"' in blob
     assert not TWELVE.search(blob)
     assert not any(i in blob for i in raw_ids)

@@ -184,3 +184,78 @@ npm run seed        # rebuilds rsafe.db; prints row counts; creates .keys/ on fi
 - Issues are still computed in memory; Phase 4 persists them and adds approve, edit and hold actions with the audit log.
 - No Verhoeff checksum on IDs (synthetic IDs would fail it); the README says Rsafe does not verify Aadhaar.
 - One machine holds both school and cluster keys (prototype limitation, documented).
+
+---
+
+## Phase 4: Audit log, actions and role-based access (2026-11-22)
+
+### What works
+- **Hash-chained audit log** (`app/services/audit.py`). Each row stores `prev_hash` and
+  `hash = SHA256(prev_hash + canonical_json(ts, actor, role, action, record_ref, payload))`; the first row
+  links to 64 zeros. `verify_chain()` returns the first broken row and the reason. Appends are serialised
+  with a lock. `ts` is stored as an ISO string so the hashed value is exactly what is read back.
+- **Demo sessions** (`app/auth.py`, `routes/session.py`): `POST /api/session {role, school_code?}` sets a
+  signed, httponly, 8-hour cookie (itsdangerous). Fixed synthetic identities: Principal of SYN-0002 (any open
+  school may be chosen), the teacher with the most active issues in their classes, MIS Coordinator of CL-01,
+  Admin, and the parent of "Ananya Kumar".
+- **Role-based access on the backend** (`services/scope.py`, `require(...)`):
+  | Role | Sees | Can do |
+  |---|---|---|
+  | Principal | own school | validate, approve, edit, hold, release held issues |
+  | Teacher | students in own classes, own teacher record | approve, edit (not held issues; no hold) |
+  | MIS Coordinator | all open schools in the cluster | validate; read-only otherwise |
+  | Admin | everything, audit log, rules | verify chain, demo tamper; no record edits |
+  | Student and Parent | own child's issues | read only |
+  No session: 401. Wrong role: 403. A record outside your scope: 404 (its existence is not revealed).
+- **Issues are stored** (`services/validation.py`) with a fingerprint, so re-runs keep human decisions.
+  Problems that disappear become `resolved`; STU-008 issues start `held`. Validation always computes over all
+  schools (cross-school duplicates) but writes only the requested schools. Every run is audited.
+- **Actions** (`services/actions.py`): approve (applies the suggested value; with no suggestion it records
+  "confirmed as reviewed"), edit (whitelisted fields with validators), hold. Each writes an audit row with
+  old and new values, rule id and version, and note, then re-validates the school. Edits that look like an
+  ID number are rejected. Approved and edited issues are final (409).
+- **Endpoints:** `POST/GET/DELETE /api/session`, `POST /api/validate`, `GET /api/summary`, `GET /api/issues`
+  (filters: status, severity, rule_id, entity, school_code), `GET /api/issues/{id}` (with current record
+  values, rule version, editable fields), `POST /api/issues/{id}/approve|edit|hold`,
+  `GET /api/audit`, `GET /api/audit/verify`, `POST /api/audit/tamper` (demo only).
+- **Seed** now also runs a first validation as "System (seed)", so the app starts with issues and an audit chain.
+  Current readiness: SYN-0001 90%, SYN-0002 87%, SYN-0003 86%.
+- The API refuses to start against an out-of-date `rsafe.db` and says to run `npm run seed`.
+
+### How to verify
+```
+npm run test     # expect: 183 passed (about 20 s)
+npm run seed
+npm run dev      # then, from a second terminal:
+curl -c j -b j -X POST http://127.0.0.1:8765/api/session -H "content-type: application/json" -d "{\"role\":\"admin\"}"
+curl -b j http://127.0.0.1:8765/api/audit/verify             # ok: true
+curl -b j -X POST http://127.0.0.1:8765/api/audit/tamper -H "content-type: application/json" -d "{}"
+curl -b j http://127.0.0.1:8765/api/audit/verify             # ok: false, first_broken_id = tampered row
+```
+Checked end to end over HTTP on the real database (then re-seeded clean).
+- `test_audit.py`: clean chain; edited payload; edited actor; edited row with a recomputed hash (caught at the
+  next link); deleted row; tamper button through the API.
+- `test_access.py`: 401/403/404 for every role, forged cookie, per-role scoping (school, cluster, teacher's
+  classes, parent's child), and a teacher blocked from releasing a held issue even inside their own classes.
+- `test_actions.py`: validation never edits records; approve, edit and hold change exactly what they say and
+  log old/new values; bad edits change nothing and log nothing; held dropout flags leave the record as is.
+- `test_privacy.py` now signs in as all five roles and calls every GET route, every visible issue and every rule.
+
+### Decisions taken (ambiguities)
+- **Admin cannot edit records** and **MIS cannot edit records**: separation of duties. Only the people at the
+  school (principal, teacher) change data.
+- **Only the principal can hold or release held issues.**
+- **The hash covers every column** (timestamp, actor, role, action, record, payload), not only the payload, so
+  forging who did something is also caught.
+- **The tamper endpoint is not itself logged.** It simulates an attacker editing the database directly.
+  It exists only while `RSAFE_DEMO_MODE=1` (the default).
+- **"Today" is pinned to 16/11/2026** (the synthetic data's date; `RSAFE_TODAY` overrides it). Without this, the
+  fee-based held dropout case would quietly disappear after 5 Dec.
+- **Default principal school is SYN-0002**, which has the widest mix of issues for the demo.
+
+### Known gaps
+- Truncating rows from the end of the chain is not detectable from the chain alone (documented in `audit.py`;
+  a real system would publish the head hash elsewhere).
+- Readiness is still the Phase 2 placeholder formula (86 to 90% now). Phase 5 revisits it for the dashboard.
+- `pip` installs `httpx`, which Starlette's TestClient now marks as deprecated (a warning only, filtered in pytest.ini).
+- The audit lock protects one process; running several API workers would need a database-level lock.

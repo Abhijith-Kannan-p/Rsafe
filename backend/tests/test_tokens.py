@@ -31,7 +31,7 @@ def test_tokens_are_deterministic_and_base32(tk):
     t1, t2 = tk.school_token("SYN-0001", ID), tk.school_token("SYN-0001", "0123 4567 8901")
     assert t1 == t2
     assert re.fullmatch(r"[a-z2-7]{52}", t1)
-    assert not re.search(r"\d{3}", t1)  # base32 digits are 2-7 and never run long enough to look like an ID
+    assert set(c for c in t1 if c.isdigit()) <= set("234567")  # base32 digits: never 0, 1, 8 or 9
     assert short(t1) == t1[:6]
 
 

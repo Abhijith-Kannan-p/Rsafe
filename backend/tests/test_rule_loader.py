@@ -93,7 +93,12 @@ def test_empty_directory_rejected(tmp_path):
         load_rules(tmp_path)
 
 
-def test_rules_api(client):
+def test_rules_api_needs_a_session(client):
+    assert client.get("/api/rules").status_code == 401
+
+
+def test_rules_api(client, seeded_db):
+    client.post("/api/session", json={"role": "teacher"})
     rules = client.get("/api/rules").json()
     assert {r["id"] for r in rules} >= {"STU-001", "STU-002", "STU-003", "STU-004"}
     assert "source" not in rules[0]
