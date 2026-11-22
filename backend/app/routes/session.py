@@ -9,7 +9,9 @@ from pydantic import BaseModel
 from sqlmodel import Session, func, select
 
 from .. import models as m
-from ..auth import COOKIE, Identity, current_identity, encode
+from fastapi import Request
+
+from ..auth import COOKIE, Identity, current_identity, decode, encode
 from ..config import SESSION_MAX_AGE
 from ..db import get_session
 from ..roles import ROLE_LABELS, Role
@@ -80,6 +82,14 @@ def sign_in(body: SessionRequest, response: Response, s: Session = Depends(get_s
     identity = build_identity(s, body.role, body.school_code)
     response.set_cookie(COOKIE, encode(identity), max_age=SESSION_MAX_AGE, httponly=True, samesite="lax")
     return identity.model_dump(mode="json")
+
+
+@router.get("/status")
+def status(request: Request) -> dict:
+    """Signed in or not, always 200: lets the app check without a 401 in the browser console."""
+    raw = request.cookies.get(COOKIE)
+    identity = decode(raw) if raw else None
+    return {"identity": identity.model_dump(mode="json") if identity else None}
 
 
 @router.get("")

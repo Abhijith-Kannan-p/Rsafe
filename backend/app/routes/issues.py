@@ -44,7 +44,8 @@ def validate(body: ValidateRequest, request: Request,
 
 @router.get("/summary")
 def summary(who: Identity = Depends(current_identity), s: Session = Depends(get_session)) -> dict:
-    return {"schools": [school_summary(s, code) for code in scope.visible_schools(s, who)]}
+    only = scope.visible_student_refs(s, who)
+    return {"schools": [school_summary(s, code, only) for code in scope.visible_schools(s, who)]}
 
 
 @router.get("/issues")

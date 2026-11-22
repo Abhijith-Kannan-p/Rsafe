@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Palette } from "lucide-react";
+import { ArrowRight, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components";
 import { MOTTO, SYNTHETIC_LINE } from "../copy";
@@ -32,9 +32,14 @@ export function Home() {
           transition={{ delay: 1.9, duration: 0.6 }}
           className="mt-10 flex flex-col items-center gap-4"
         >
-          <Button size="lg" icon={<Palette className="h-5 w-5" aria-hidden />} onClick={() => navigate("/styleguide")}>
-            View design system
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button size="lg" iconRight={<ArrowRight className="h-5 w-5" aria-hidden />} onClick={() => navigate("/enter")}>
+              Enter Rsafe
+            </Button>
+            <Button size="lg" variant="ghost" icon={<Palette className="h-5 w-5" aria-hidden />} onClick={() => navigate("/styleguide")}>
+              Design system
+            </Button>
+          </div>
           <p className="text-sm text-mist">{SYNTHETIC_LINE} Full landing page arrives in Phase 7.</p>
         </motion.div>
       </div>

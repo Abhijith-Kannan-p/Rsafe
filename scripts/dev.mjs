@@ -38,6 +38,6 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 // 8765, not 8000: 8000 is commonly taken by Docker containers and other local dev servers.
-start("api", "36", py, ["-m", "uvicorn", "app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8765"], BACKEND);
+start("api", "36", py, ["-m", "uvicorn", "app.main:app", "--reload", "--timeout-graceful-shutdown", "1", "--host", "127.0.0.1", "--port", "8765"], BACKEND);
 start("web", "33", npmCmd(), ["run", "dev"], FRONTEND);
 console.log("Rsafe dev: web http://127.0.0.1:5173  api http://127.0.0.1:8765/api/health");

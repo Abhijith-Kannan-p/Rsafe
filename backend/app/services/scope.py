@@ -28,6 +28,15 @@ def teacher_student_refs(s: Session, who: Identity) -> set[str]:
     return {st.student_ref for st in students if (st.class_grade, st.section) in classes}
 
 
+def visible_student_refs(s: Session, who: Identity) -> set[str] | None:
+    """None means "every student in the visible schools"."""
+    if who.role == Role.TEACHER:
+        return teacher_student_refs(s, who)
+    if who.role == Role.STUDENT_PARENT:
+        return {who.student_ref} if who.student_ref else set()
+    return None
+
+
 def can_see_issue(s: Session, who: Identity, issue: Issue) -> bool:
     if issue.school_code not in visible_schools(s, who):
         return False

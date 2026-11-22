@@ -18,6 +18,8 @@ npm run setup   # once: venv, dependencies, synthetic data
 npm run dev     # web http://127.0.0.1:5173, api http://127.0.0.1:8765
 ```
 
+Open http://127.0.0.1:5173/enter and pick a role. As Principal, try **Upload, then Load sample messy file**.
+
 Other commands: `npm run test`, `npm run seed`, `npm run build`. `make <target>` and `./run.sh <target>`
 do the same thing.
 

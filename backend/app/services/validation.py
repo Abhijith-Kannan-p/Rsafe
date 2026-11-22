@@ -1,8 +1,8 @@
 """Run the rules against the database and store the results as Issues.
 
-Re-runs keep human decisions: an issue is identified by its fingerprint, so an approved,
-edited or held issue keeps its status. Open or held issues that no longer appear become
-"resolved". Results are always computed over ALL schools (cross-school duplicates need
+Re-runs keep human decisions: an issue is identified by its fingerprint, so a held issue or
+a confirmed one keeps its status. Open or held issues that no longer appear become
+"resolved". An issue whose fix changed a value reopens if the same problem shows up again. Results are always computed over ALL schools (cross-school duplicates need
 that), but only the requested schools' issues are written.
 """
 
@@ -60,7 +60,12 @@ def _sync_school(s: Session, code: str, results: list[IssueResult]) -> dict[str,
         if fp in existing:
             e = existing[fp]
             e.rule_version, e.evidence, e.confidence = r.rule_version, r.evidence, r.confidence
-            if e.status == "resolved":
+            # Reopen when the problem is back: after being cleared, or after a person changed the
+            # value and the record has the problem again (e.g. an upload restored the old value).
+            # A plain "confirm" (approved, no value applied) keeps its decision.
+            value_was_changed = e.status == "edited" or (e.status == "approved" and e.suggested_field
+                                                          and e.suggested_value is not None)
+            if e.status == "resolved" or value_was_changed:
                 e.status, e.updated_at = start, now
                 reopened += 1
             continue
@@ -79,13 +84,21 @@ def _sync_school(s: Session, code: str, results: list[IssueResult]) -> dict[str,
     return {"added": added, "reopened": reopened, "resolved": resolved}
 
 
-def school_summary(s: Session, code: str) -> dict[str, Any]:
+def school_summary(s: Session, code: str, only_students: set[str] | None = None) -> dict[str, Any]:
+    """Counts for one school. With `only_students`, counts just those students' records and
+    issues (a teacher's classes, a parent's child), so no role sees a wider picture than its own."""
     issues = list(s.exec(select(m.Issue).where(m.Issue.school_code == code)))
-    students = len(list(s.exec(select(m.Student.id).where(m.Student.school_code == code))))
+    refs = [r for r in s.exec(select(m.Student.student_ref).where(m.Student.school_code == code))]
+    if only_students is not None:
+        refs = [r for r in refs if r in only_students]
+        issues = [i for i in issues if i.entity == "student" and i.entity_ref in only_students]
+    students = len(refs)
     active = [i for i in issues if i.status in ACTIVE]
     student_active = [i for i in active if i.entity == "student"]
+    school = s.get(m.School, code)
     return {
         "school_code": code,
+        "name": school.name if school else code,
         "students": students,
         "readiness": readiness_score(students, student_active),  # type: ignore[arg-type]
         "by_severity": dict(Counter(i.severity for i in active)),

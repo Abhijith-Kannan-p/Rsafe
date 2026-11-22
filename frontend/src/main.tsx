@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { Background, ToastProvider } from "./components";
+import { SessionProvider } from "./lib/session";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -18,8 +19,10 @@ createRoot(document.getElementById("root")!).render(
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
         <ToastProvider>
-          <Background />
-          <App />
+          <SessionProvider>
+            <Background />
+            <App />
+          </SessionProvider>
         </ToastProvider>
       </BrowserRouter>
     </MotionConfig>

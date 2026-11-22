@@ -383,6 +383,33 @@ def write_csv(path: Path, rows: list[dict], columns: list[str] | None = None) ->
         writer.writerows(rows)
 
 
+# Headings as a school's own spreadsheet might have them, for the upload screen's column mapping.
+EXPORT_HEADINGS = {
+    "student_ref": "Student ID", "school_code": "School Code", "admission_no": "Admission No",
+    "name": "Student Name", "dob": "Date of Birth", "gender": "Gender", "class_grade": "Class",
+    "section": "Section", "guardian_name": "Guardian Name", "aadhaar": "Aadhaar No",
+    "aadhaar_status": "Aadhaar Status", "enrolment_status": "Enrolment Status",
+    "previous_school_code": "Previous School", "transfer_status": "Transfer Status",
+}
+DEFAULT_OUT = Path(__file__).resolve().parent / "data"
+SAMPLES_DIR = Path(__file__).resolve().parent.parent / "frontend" / "public" / "samples"
+
+
+def write_samples(ds: Dataset, out: Path = SAMPLES_DIR) -> None:
+    """The "Load sample messy file" demo uploads: each open school's raw export (synthetic IDs,
+    as the school's own file would have them), with spreadsheet-style headings and a Remarks
+    column that maps to nothing. Same values as students.csv, so an import changes no data."""
+    out.mkdir(parents=True, exist_ok=True)
+    open_codes = [s["code"] for s in ds.schools if s["status"] == "open"]
+    for code in open_codes:
+        rows = []
+        for i, st in enumerate(r for r in ds.students if r["school_code"] == code):
+            row = {EXPORT_HEADINGS[c]: st.get(c, "") for c in STUDENT_COLUMNS}
+            row["Remarks"] = "fee concession" if i % 17 == 5 else ""
+            rows.append(row)
+        write_csv(out / f"school_export_{code}.csv", rows, [*EXPORT_HEADINGS.values(), "Remarks"])
+
+
 def generate(seed: int = DEFAULT_SEED, per_school: int = 60) -> Dataset:
     return Generator(seed, per_school).build()
 
@@ -399,9 +426,6 @@ def write_dataset(ds: Dataset, out: Path, seed: int) -> None:
     write_csv(out / "maintenance_log.csv", ds.maintenance_log)
     write_csv(out / "attendance.csv", ds.attendance)
     write_csv(out / "fees.csv", ds.fees, ["student_ref", "school_code", "date", "amount"])
-    # The "Load sample messy file" demo upload: one school's raw student export.
-    write_csv(out / "sample_messy_upload.csv",
-              [s for s in ds.students if s["school_code"] == "SYN-0001"], STUDENT_COLUMNS)
     (out / "injected.json").write_text(json.dumps({
         "synthetic": True,
         "seed": seed,
@@ -416,12 +440,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate synthetic Rsafe data (all fake).")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--per-school", type=int, default=60)
-    parser.add_argument("--out", type=Path, default=Path(__file__).parent / "data")
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--no-db", action="store_true", help="only write CSVs, do not rebuild rsafe.db")
     args = parser.parse_args()
 
     ds = generate(args.seed, args.per_school)
     write_dataset(ds, args.out, args.seed)
+    if args.out == DEFAULT_OUT:
+        write_samples(ds)
     if not args.no_db:
         from app.db import engine
         from app.services.loader import seed_and_validate

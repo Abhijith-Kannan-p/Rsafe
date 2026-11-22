@@ -121,3 +121,16 @@ def test_parent_sees_only_own_child(client, seeded_db):
     me = login(client, "student_parent")
     issues = client.get("/api/issues").json()
     assert issues and {i["entity_ref"] for i in issues} == {me["student_ref"]}
+
+
+def test_summary_is_scoped_to_what_the_role_sees(client, seeded_db):
+    login(client, "principal", "SYN-0002")
+    school = client.get("/api/summary").json()["schools"][0]
+    login(client, "student_parent")
+    mine = client.get("/api/summary").json()["schools"][0]
+    assert mine["students"] == 1 and mine["active"] == len(client.get("/api/issues").json())
+    login(client, "teacher", "SYN-0002")
+    t = client.get("/api/summary").json()["schools"][0]
+    assert 0 < t["students"] < school["students"]
+    assert t["active"] == len([i for i in client.get("/api/issues").json()
+                               if i["entity"] == "student" and i["status"] in ("open", "held")])

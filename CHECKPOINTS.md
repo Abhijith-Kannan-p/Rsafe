@@ -259,3 +259,94 @@ Checked end to end over HTTP on the real database (then re-seeded clean).
 - Readiness is still the Phase 2 placeholder formula (86 to 90% now). Phase 5 revisits it for the dashboard.
 - `pip` installs `httpx`, which Starlette's TestClient now marks as deprecated (a warning only, filtered in pytest.ini).
 - The audit lock protects one process; running several API workers would need a database-level lock.
+
+## Phase 5: App screens (2026-11-22)
+
+### What works
+- **Enter page** (`/enter`): the five role cards. Picking one signs in as that demo role and opens its home.
+  The placeholder landing page now has an "Enter Rsafe" button (the full landing page is Phase 7).
+- **App shell** (`components/AppShell.tsx`): glass sidebar (links depend on the role), top bar with the school
+  or cluster name, a "Synthetic data" chip and a role switcher. Below 768px the sidebar becomes a scrolling
+  link row in the top bar. Pages remount when the identity changes, so no page shows the previous role's data.
+- **Dashboard** (`/app/dashboard`): readiness ring, high/medium/low/held counts, a "Held dropout flags" panel,
+  the issue table with severity, rule, entity and status filters (kept in the URL), a school filter for
+  MIS/Admin, and "Run validation" (shows the measured time). The same page serves teachers ("My classes")
+  and parents ("My record") with scoped data until Phase 6 gives them their own views.
+- **Issue panel** (side panel, `?issue=<id>`, so it can be linked directly): rule ID and version, plain-language reason, detail,
+  confidence note, the government failure reason addressed, evidence, the current record with the relevant
+  fields highlighted, the suggested fix with a word diff (removed words struck in coral, added words in aqua),
+  and **Approve fix / Edit / Hold** with an optional audit note. Teachers see why they can't release held
+  issues; read-only roles see a plain note. After every action a toast gives the audit entry number.
+- **Upload** (`/app/upload`, Principal): drag and drop or choose a CSV, or **Load sample messy file**. The server
+  maps the columns from the headings (editable in the UI), checks every row, and returns an error summary
+  (blocking errors vs warnings) and a 25-row preview, **without saving anything**. "Import and validate" asks
+  for confirmation, then replaces that school's students, writes `data.import` to the audit log and runs
+  every rule. Full Aadhaar numbers are tokenised on arrival and never echoed: previews show `XXXX XXXX 1234`.
+- **Duplicates** (`/app/duplicates`): cross-school matches grouped by token (first 6 characters) and the last
+  four digits, showing the two schools and record refs, never names. A side outside your scope is drawn
+  dashed and marked "Not in your scope". Within-school duplicates in a second section.
+- **Rules** (`/app/rules`): table of loaded rules; clicking one shows its message, fix, the failure reason it
+  addresses, parameters and the YAML source. Read only.
+- **Export** (`/app/export`, Principal and MIS): **cleaned CSV** (current values after every decision, Aadhaar
+  masked to the last four digits, plus `rsafe_status` = ready / needs_review / held and the open rule IDs) and
+  a **one-page HTML readiness report** (issues found, fixed, held, still open by rule, every decision with who
+  made it, rule versions, and whether the audit chain is intact; print or save as PDF). Both exports are logged.
+- **Audit log** (`/app/audit`, Admin): table with time, actor, role, action, record and short hash; click a
+  row for its payload and full hashes. **Verify chain** and **Tamper row (demo)**; a broken row is highlighted
+  in coral, marked BROKEN and scrolled into view.
+- **New endpoints:** `GET /api/session/status` (always 200, so the browser console stays clean),
+  `GET /api/upload/fields`, `POST /api/upload/preview`, `POST /api/upload/commit`, `GET /api/export/csv`,
+  `GET /api/export/report`. `GET /api/summary` now includes the school name and is scoped to what the role
+  sees (a teacher's classes, a parent's child).
+- **Seed** writes one sample export per open school to `frontend/public/samples/school_export_SYN-000X.csv`,
+  with spreadsheet-style headings ("Student Name", "Date of Birth", "Aadhaar No") and an extra "Remarks"
+  column, to exercise the mapping. Same values as `students.csv`, so importing it changes no data.
+  `backend/data/sample_messy_upload.csv` is gone.
+
+### How to verify
+```
+npm run test     # expect: 204 passed (about 35 s)
+npm run seed
+npm run dev      # open http://127.0.0.1:5173/enter
+```
+1. Principal: open a STU-005 row, read the word diff, press **Approve fix**. A toast gives the audit entry number.
+2. Upload, then **Load sample messy file**: 61 rows, 0 errors, 2 warnings. Import, then confirm.
+3. Duplicates: two cross-school pairs, by token and last four digits only.
+4. Export: download the CSV and open the report.
+5. Switch role to Admin: **Verify chain** (intact), **Tamper row**, **Verify chain** (broken row highlighted).
+
+I drove all of this in headless Edge (Playwright) at 1440x900 and at 390px wide: no browser console errors.
+I re-seeded afterwards so the database starts clean.
+
+### Decisions taken (ambiguities)
+- **Upload replaces the school's whole student list.** It never merges or edits single fields, and it
+  needs a confirm click and an audit row.
+- **Only the principal uploads.**
+- **Format problems don't block an import, only structural ones do.** Warnings (bad date, empty name, Aadhaar
+  not 12 digits) are left for the rules to explain. Blocking errors: rows from another school, a duplicate or
+  empty Student ID, a required field with no column mapped.
+- **A fix that comes back reopens.** If a person approved or edited a value and the same problem
+  appears again (for example, an upload put the old value back), the issue returns to open. A plain
+  "confirm" (no value applied) keeps its decision.
+- **Exports are allowed with open issues.** Those students are marked in `rsafe_status`, and the report
+  shows the counts, so nothing is hidden.
+- **Exports: Principal (own school) and MIS (cluster school, chosen).** Teachers, Admin and parents get 403.
+- **The cleaned CSV has no full Aadhaar.** Rsafe never had it; the school re-attaches it from its own system
+  when submitting. This is the honest consequence of the privacy design.
+- **The report is HTML with print CSS rather than a generated PDF:** no new dependency. "Print or save as PDF" uses the browser.
+- **Readiness formula kept** (each record's worst open issue costs 1, 0.5 or 0.2), and the dashboard explains
+  it in one line. Demo scores: SYN-0001 90%, SYN-0002 87%, SYN-0003 86%.
+- **Sample files are served by Vite from `public/samples`.** They stand in for the file on the school's own
+  computer, so they do contain synthetic 12-digit IDs (all starting with 0). The API never returns them.
+- **`playwright-core` added** (frontend devDependency, pinned 1.49.1, no browser download; it drives the
+  installed Edge). The spec already calls for Playwright in Phase 7; I used it here to check the screens.
+
+### Known gaps
+- Upload covers students only. Teachers, facilities and attendance still come from the seed.
+- Teacher and parent views reuse the dashboard. Their own screens, the cluster view and the mock OTP parent
+  confirmation are Phase 6.
+- No Lighthouse run yet (Phase 8). Keyboard: every control is reachable; dialogs trap focus and close on Esc.
+- On Windows, `uvicorn --reload` sometimes logs "Reloading..." but keeps serving old code when it runs without
+  a console (it did in my background runs). If backend changes don't show, restart `npm run dev`. I added
+  `--timeout-graceful-shutdown 1` so open proxy connections don't hold up a reload.
+- The cleaned CSV columns follow Rsafe's own names, not the official UDISE+ upload template.

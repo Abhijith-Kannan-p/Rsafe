@@ -8,13 +8,14 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
     ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
   });
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      detail = (await res.json()).detail ?? detail;
+      const body = await res.json();
+      detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail[0]?.msg ?? detail : detail;
     } catch {
       /* non-JSON error body */
     }
@@ -23,4 +24,138 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export const post = <T>(path: string, body: unknown = {}) => api<T>(path, { method: "POST", body: JSON.stringify(body) });
+
+export const qs = (params: Record<string, string | undefined | null>) => {
+  const p = Object.entries(params).filter(([, v]) => v) as [string, string][];
+  return p.length ? `?${new URLSearchParams(p)}` : "";
+};
+
 export type Health = { status: string; version: string; synthetic: boolean };
+
+export type Role = "principal" | "teacher" | "mis_coordinator" | "admin" | "student_parent";
+
+export type Identity = {
+  role: Role;
+  actor: string;
+  school_code: string | null;
+  cluster: string | null;
+  teacher_ref: string | null;
+  student_ref: string | null;
+};
+
+export type Severity = "high" | "medium" | "low";
+export type IssueStatus = "open" | "held" | "approved" | "edited" | "resolved";
+
+export type SchoolSummary = {
+  school_code: string;
+  name: string;
+  students: number;
+  readiness: number;
+  by_severity: Partial<Record<Severity, number>>;
+  by_status: Partial<Record<IssueStatus, number>>;
+  active: number;
+  held: number;
+};
+
+export type Issue = {
+  id: number;
+  rule_id: string;
+  rule_version: string;
+  severity: Severity;
+  entity: "student" | "teacher" | "facility";
+  entity_ref: string;
+  school_code: string;
+  title: string;
+  message: string;
+  detail: string;
+  fix: string;
+  confidence: string | null;
+  suggested_value: string | null;
+  suggested_field: string | null;
+  evidence: Record<string, unknown>;
+  status: IssueStatus;
+  note: string | null;
+  acted_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IssueDetail = Issue & {
+  record: Record<string, string | number | null>;
+  editable_fields: string[];
+  rule: { id: string; version: string; title: string; addresses: string } | null;
+};
+
+export type ActionResult = { issue: Issue; audit_id: number; summary: SchoolSummary };
+
+export type Rule = {
+  id: string;
+  version: string;
+  title: string;
+  severity: Severity;
+  entity: string;
+  scope: string;
+  check: string;
+  message: string;
+  fix: string;
+  addresses: string;
+  hold: boolean;
+  params: Record<string, unknown>;
+};
+export type RuleDetail = Rule & { source: string };
+
+export type AuditRow = {
+  id: number;
+  ts: string;
+  actor: string;
+  role: string;
+  action: string;
+  record_ref: string;
+  payload: Record<string, unknown>;
+  hash: string;
+  short_hash: string;
+  prev_hash: string;
+};
+
+export type ChainReport = {
+  ok: boolean;
+  checked: number;
+  first_broken_id: number | null;
+  reason: string | null;
+  head_hash: string | null;
+};
+
+export type UploadProblem = { row: number; field: string; level: "error" | "warning"; message: string };
+export type UploadPreview = {
+  headers: string[];
+  fields: { field: string; label: string; required: boolean }[];
+  mapping: Record<string, string>;
+  rows_total: number;
+  rows: { row: number; values: Record<string, string>; problems: UploadProblem[] }[];
+  problems: UploadProblem[];
+  file_errors: string[];
+  counts: { errors: number; warnings: number; rows_with_problems: number };
+  can_import: boolean;
+};
+export type UploadResult = {
+  imported: number;
+  replaced: number;
+  summary: SchoolSummary;
+  changes: { added: number; reopened: number; resolved: number };
+};
+
+export const ROLE_LABEL: Record<Role, string> = {
+  principal: "Principal",
+  teacher: "Teacher",
+  mis_coordinator: "MIS Coordinator",
+  admin: "Admin",
+  student_parent: "Student and Parent",
+};
+
+/** Students-weighted readiness across several schools. */
+export function overallReadiness(schools: SchoolSummary[]): number {
+  const n = schools.reduce((a, s) => a + s.students, 0);
+  if (!n) return 100;
+  return Math.round(schools.reduce((a, s) => a + s.readiness * s.students, 0) / n);
+}
