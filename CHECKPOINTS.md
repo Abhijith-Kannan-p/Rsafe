@@ -433,3 +433,77 @@ it with an inline error. I re-seeded afterwards.
 - Teachers can't pick which of their classes to show; they see all of them (a handful each in the seed).
 - Extra features 1 to 10 haven't started. Next is Phase 7 (landing page and screenshots); the extras come
   after, if time allows.
+
+## Phase 7: Landing page and screenshots (23 Nov 2026)
+
+### What works
+- **Landing page (`/`, `frontend/src/pages/Home.tsx`).**
+  - **Hero:** "Rsafe" fades in with blur-to-sharp (1.6 s), then the motto, then **Enter Rsafe** (to `/enter`)
+    and **Scroll down** (bouncing chevron, smooth-scrolls to the showcase), then "Prototype with synthetic data."
+  - **"See it catch problems":** seven steps, each a real screenshot in a glass browser frame with a numbered
+    caption, alternating sides, fading and sliding in on scroll (Framer `whileInView`).
+  - **"How it works":** Import, Check, Review, Submit. Import sits inside a dashed "Inside the school" box, with
+    a saffron **"Raw IDs stop at the school"** marker between it and Check. Stacks vertically on phones.
+  - **"Who are you?":** the same role grid as `/enter`; a card signs in and opens that role's home.
+  - **Footer:** team kabhijith447, PRASUNEX INNOVATHON 2026, synthetic-data notice.
+  - **Reduced motion:** with the OS setting on, everything renders in place: no fades, reveals, bounce or orb drift.
+- **Captions** live in `frontend/src/copy.ts` (`SHOWCASE`), next to the motto and its two alternates.
+- **Screenshot pipeline: `npm run screenshots` / `make screenshots`** (`scripts/make_screenshots.mjs`).
+  - Seeds a throwaway database and keys in `scripts/.shots-tmp/` (git-ignored), and starts its own API on
+    8766 and Vite on 5174. Your dev database and the dev servers are never touched.
+  - Drives the real UI at 1440x900 in installed Edge or Chrome (playwright-core, no browser download).
+  - Every caption state is reached through the same API calls the buttons make, so each one is audited:
+    1. `01-upload`: Principal SYN-0001 loads the sample messy file. Shows 60 rows, column mapping, 2 warnings
+       by row number and the masked preview. The script then imports it, which runs validation.
+    2. `02-dashboard`: readiness ring (90%), severity counts, the held-flags panel and the issue list.
+    3. `03-issue`: a high-severity issue with a suggested value (SYS-001 transfer status). Shows evidence,
+       the record with the problem field highlighted, and the fix diff.
+    4. `04-held`: a held STU-008 dropout flag with its "Held for a person to review" banner.
+    5. `05-duplicates`: the MIS view of cross-school token matches.
+    6. `07-cluster`: one school of each status.
+       - **SYN-0001 Ready:** the principal sets the two held flags back to active (the attendance evidence
+         says the child still attends) and approves the rest.
+       - **SYN-0003 Fixing:** the principal approves the high and held issues.
+       - **SYN-0002 Blocked:** untouched.
+    7. `06-audit`: Admin presses **Tamper row (demo)** and then **Verify chain**. The broken row is
+       highlighted with a BROKEN badge, and the toast reads "Chain broken at row #19". Captured last, so
+       nothing is written after the tamper.
+  - Writes `frontend/public/shots/manifest.json`. The landing page reads it and shows a striped placeholder
+    frame ("Screenshot not generated yet") for any missing file, so a missing image never causes a 404.
+- The Vite proxy target can be overridden with `RSAFE_API_URL`; normal dev still uses 8765.
+
+### How to verify
+```
+npm run screenshots   # about 20 s; prints a tick per image and "7/7 present"
+npm run dev           # http://127.0.0.1:5173/
+```
+- Watch the hero sequence, press Scroll down, and scroll through all seven steps, How it works and the role grid.
+- Click a role card and you land on that role's home.
+- To see placeholders, set `"files": []` in `frontend/public/shots/manifest.json` and reload.
+- `npm run test`: 218 passed. `npm run build` passes.
+
+I walked through this in headless Edge:
+- At 1440x900: no console errors and no failed requests. 7 images rendered; Enter as Teacher opened `/app/classes`.
+- At 390px: no horizontal scroll.
+- With reduced motion: the hero shows at once.
+- With a partial manifest: 1 image and 6 placeholders, no errors.
+
+### Decisions taken (ambiguities)
+- **Upload shot shows the preview, not the result.** "Watch validation run" is clearer as the pre-import
+  check (mapping, warnings, masked rows) than as a ring after the fact. The script still imports the file,
+  so screenshots 2 to 4 are taken after validation.
+- **SYN-0001 is the showcase school** because it has the held dropout flags (SYN-0002, the default
+  principal school, has none).
+- **To reach Ready, the script approves every SYN-0001 issue.** That is a bulk decision a real principal
+  would make one by one. The decisions are real, audited actions in the throwaway database, not seeded history.
+- **The manifest replaces probing for files.** An `<img onError>` fallback would log a 404 for each
+  missing file in the console.
+- **I avoided adding `@types/node`** by reading the env var in `vite.config.ts` via `globalThis.process`.
+
+### Known gaps
+- The PNGs are about 1 MB each (6.7 MB total). They lazy-load, but Phase 8's performance pass should
+  shrink them (smaller PNGs or WebP).
+- The audit screenshot shows the broken row and the toast, but not the "Tampering detected" banner, which
+  is above the fold. At 900px they can't both fit.
+- `/enter` and the landing grid share `RoleCard`, whose `<h3>` sits under an `<h1>` on `/enter`. The
+  heading order will be checked in Phase 8's accessibility pass.

@@ -11,7 +11,7 @@ switch (task) {
     run(requireVenv(), ["seed.py", ...rest], { cwd: BACKEND });
     break;
   case "screenshots":
-    console.log("The screenshot pipeline arrives in Phase 7 (scripts/make_screenshots.mjs).");
+    await import("./make_screenshots.mjs");
     break;
   default:
     console.error(`Unknown task: ${task}`);

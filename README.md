@@ -23,6 +23,11 @@ Open http://127.0.0.1:5173/enter and pick a role. As Principal, try **Upload, th
 Other commands: `npm run test`, `npm run seed`, `npm run build`. `make <target>` and `./run.sh <target>`
 do the same thing.
 
+`npm run screenshots` regenerates the seven landing-page images in `frontend/public/shots/`. It seeds a
+throwaway database in `scripts/.shots-tmp/`, starts its own API (port 8766) and web server (port 5174), and
+drives the app in an installed Edge or Chrome (`RSAFE_BROWSER=chrome` to choose). Your dev database is not
+touched. Stop `npm run dev` first only if those ports are busy.
+
 ## Privacy design (and its limits)
 
 **Raw IDs stop at the school.** When a school file is imported, each Aadhaar number is

@@ -2,6 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+// The screenshot script points the proxy at its own throwaway backend; normal dev uses 8765.
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
+const API = env.RSAFE_API_URL ?? "http://127.0.0.1:8765";
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
@@ -10,7 +14,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      "/api": "http://127.0.0.1:8765",
+      "/api": API,
     },
   },
 });
