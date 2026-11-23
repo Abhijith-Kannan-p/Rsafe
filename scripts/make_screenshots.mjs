@@ -153,11 +153,11 @@ try {
   await page.goto(`${BASE}/app/upload`);
   await page.getByRole("button", { name: "Load sample messy file" }).click();
   await page.getByText("Blocking errors").waitFor();
-  // scroll so the summary tiles sit just under the sticky top bar
+  // scroll so the summary tiles sit at the top of the screen
   await page.evaluate(() => {
     const tile = [...document.querySelectorAll("p")].find((p) => p.textContent?.trim().toLowerCase() === "rows");
     const card = tile?.closest(".glass");
-    if (card) window.scrollTo(0, window.scrollY + card.getBoundingClientRect().top - 104);
+    if (card) window.scrollTo(0, window.scrollY + card.getBoundingClientRect().top - 24);
   });
   await shot("01-upload.png");
   await page.getByRole("button", { name: "Import and validate" }).click();

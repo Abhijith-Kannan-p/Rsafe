@@ -203,7 +203,7 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="glass sticky top-4 z-30 mx-4 mt-4 flex flex-wrap items-center gap-3 !rounded-2xl px-4 py-3 md:ml-0">
+        <header className="glass relative z-30 mx-4 mt-4 flex flex-wrap items-center gap-3 !rounded-2xl px-4 py-3 md:ml-0">
           <div className="min-w-0 flex-1">
             <p className="text-xs uppercase tracking-wider text-mist">{ROLE_LABEL[identity.role]}</p>
             <p className="truncate font-display text-base font-semibold text-cream">{place}</p>
