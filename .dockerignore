@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.idea
+.keys
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.db
+**/*.db-journal
+frontend/dist
+backend/data/perf
+scripts/.shots-tmp
+test-results
+playwright-report

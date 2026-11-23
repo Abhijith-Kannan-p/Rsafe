@@ -12,7 +12,7 @@ from .. import models as m
 from fastapi import Request
 
 from ..auth import COOKIE, Identity, current_identity, decode, encode
-from ..config import SESSION_MAX_AGE
+from ..config import COOKIE_SECURE, SESSION_MAX_AGE
 from ..db import get_session
 from ..roles import ROLE_LABELS, Role
 
@@ -84,7 +84,7 @@ def sign_in(body: SessionRequest, response: Response, s: Session = Depends(get_s
     if s.exec(select(func.count()).select_from(m.School)).one() == 0:
         raise HTTPException(503, "No data loaded. Run `npm run seed` first.")
     identity = build_identity(s, body.role, body.school_code)
-    response.set_cookie(COOKIE, encode(identity), max_age=SESSION_MAX_AGE, httponly=True, samesite="lax")
+    response.set_cookie(COOKIE, encode(identity), max_age=SESSION_MAX_AGE, httponly=True, samesite="lax", secure=COOKIE_SECURE)
     return identity.model_dump(mode="json")
 
 

@@ -29,6 +29,12 @@ SESSION_MAX_AGE = 8 * 3600
 
 DATABASE_URL =os.environ.get("RSAFE_DATABASE_URL", f"sqlite:///{BACKEND_DIR / 'rsafe.db'}")
 
+# Built frontend served by the API in a single-service deployment (see app/static.py).
+STATIC_DIR = Path(os.environ.get("RSAFE_STATIC_DIR", REPO_DIR / "frontend" / "dist"))
+
+# Mark the session cookie Secure (HTTPS only). On for deployments behind HTTPS; off for local http.
+COOKIE_SECURE = os.environ.get("RSAFE_COOKIE_SECURE", "0") == "1"
+
 # Signs the demo-role session cookie. A fixed dev default is fine for a local prototype.
 SESSION_SECRET = os.environ.get("RSAFE_SESSION_SECRET", "rsafe-local-dev-only-not-a-secret")
 

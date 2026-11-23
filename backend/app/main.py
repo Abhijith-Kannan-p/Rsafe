@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
 
 from . import __version__
-from .config import CORS_ORIGINS, SYNTHETIC_NOTICE
+from .config import CORS_ORIGINS, STATIC_DIR, SYNTHETIC_NOTICE
 from .db import engine, init_db
 from .models import SQLModel
 from .roles import ROLE_LABELS
@@ -23,6 +23,7 @@ from .routes import session as session_routes
 from .routes import upload as upload_routes
 from .routes import views as view_routes
 from .services.rules import load_rules
+from .static import mount_frontend
 
 
 def check_schema() -> None:
@@ -83,3 +84,7 @@ def meta() -> dict:
         "notice": SYNTHETIC_NOTICE,
         "roles": [{"id": r.value, "label": label} for r, label in ROLE_LABELS.items()],
     }
+
+
+# Last, so every /api route above wins: serve the built frontend when it exists (deployments).
+mount_frontend(app, STATIC_DIR)

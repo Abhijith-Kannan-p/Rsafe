@@ -714,3 +714,43 @@ database, virtualenv or node_modules) into an empty folder and ran it as a judge
 - The guided tour ran start to finish: all 10 steps opened the right role and screen, with no console errors.
 
 No code changed in this check.
+
+## Deployment (23 Nov 2026)
+
+### What works
+- **One container** (`Dockerfile`): Node builds the frontend, then a Python 3.12 slim image runs the API
+  as a non-root user.
+  - The API serves the built frontend (`backend/app/static.py`): real files from `dist`, `index.html` for
+    deep links, JSON 404s for unknown `/api` paths, and no path escaping `dist` (tested).
+  - Hashed assets get long-lived cache headers.
+- **`deploy/start.sh`**:
+  - Generates a random session secret if the host gave none.
+  - Seeds fresh synthetic data into `/tmp`, so the committed CSVs are untouched.
+  - Starts uvicorn on `$PORT` with proxy headers.
+- **The session cookie is `Secure`** in the image (`RSAFE_COOKIE_SECURE=1`); local dev is unchanged.
+- **`render.yaml`**: a Render Blueprint for one free Docker web service, with a health check and a
+  generated secret.
+- **`.gitattributes`** keeps `*.sh` LF. I also fixed `run.sh`, which had CRLF endings and would have
+  failed on macOS and Linux.
+
+### How to verify
+```
+npm run test                     # 249 passed
+docker build -t rsafe .
+docker run --rm -p 8080:8000 rsafe
+```
+My checks on the built image (330 MB, built in about 74 s):
+- `/api/health` responds, deep links return the app, and the cookie is `HttpOnly; SameSite=lax; Secure`.
+- CSV export and the report work.
+- The guided tour ran start to finish in Edge against the container: 10/10 steps, all 7 landing
+  screenshots, no console errors.
+
+### Decisions taken (ambiguities)
+- **Render's free tier** is the suggested host because it needs no code beyond the Blueprint. Nothing
+  paid is added; any Docker host works.
+- **Data is reseeded on every start** rather than kept on a persistent disk. That keeps the deployment
+  free and every demo clean. The audit log restarts with the data.
+
+### Known gaps
+- On a free tier the first visit after idle is slow, and decisions made on the live site disappear
+  when it restarts.

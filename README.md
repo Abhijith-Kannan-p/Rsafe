@@ -53,6 +53,46 @@ Open http://127.0.0.1:5173. **Enter Rsafe** lets you pick a demo role. For a gui
 
 `make <target>` and `./run.sh <target>` run the same commands.
 
+## Deploy
+
+Rsafe deploys as **one Docker container**: the API serves the built frontend on a single port, so the
+app has one URL and its session cookie is same-origin. On every start the container builds fresh
+synthetic data, so a restarted deployment is a clean demo.
+
+**Try the container locally** (needs Docker):
+
+```
+docker build -t rsafe .
+docker run --rm -p 8080:8000 rsafe     # then open http://localhost:8080
+```
+
+**Free hosting on Render** (uses the included [render.yaml](render.yaml)):
+
+1. Push the repository to GitHub, including `Dockerfile`, `render.yaml` and `deploy/start.sh`.
+2. At [render.com](https://render.com), sign in with GitHub, choose **New > Blueprint**, and pick this
+   repository. Render reads `render.yaml`: one free Docker web service, health check `/api/health`, and a
+   generated `RSAFE_SESSION_SECRET`. Press **Apply**.
+3. The first build takes a few minutes. Then open the `https://rsafe-….onrender.com` address Render shows.
+4. Later pushes to the default branch redeploy automatically.
+
+Things to know about the free tier (check Render's current plan details):
+- It sleeps when idle and takes up to about a minute to wake on the next visit. **Open the link a few
+  minutes before you present.**
+- Each wake-up or redeploy starts with fresh demo data, and the audit log starts again.
+- Anyone with the link can use the demo-only **Reset demo data** and **Tamper row** buttons. Set
+  `RSAFE_DEMO_MODE=0` to remove them, which also removes the tamper demo.
+
+**Any other Docker host** (Railway, Fly.io, a VM): build the `Dockerfile` and set these if needed.
+
+| Variable | Default in the image | Meaning |
+|---|---|---|
+| `PORT` | `8000` | Port the server listens on; most hosts set it for you |
+| `RSAFE_SESSION_SECRET` | random per start | Signs the session cookie. Set a fixed long random value so sign-ins survive restarts |
+| `RSAFE_DEMO_MODE` | `1` | `0` removes the Reset and Tamper demo buttons |
+| `RSAFE_COOKIE_SECURE` | `1` | Session cookie only over HTTPS (and `localhost`). Set `0` only for plain HTTP on another address |
+
+The deployed app holds synthetic data only and makes no outside calls.
+
 ## Who uses it (demo roles)
 
 | Role | Home screen | Can |
