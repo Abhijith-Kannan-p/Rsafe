@@ -166,7 +166,7 @@ try {
 
   // 02 Dashboard: readiness ring and the issue list.
   await page.goto(`${BASE}/app/dashboard`);
-  await page.locator("tbody tr").first().waitFor();
+  await page.locator("[data-tour=issues] tbody tr").first().waitFor();
   await page.mouse.move(0, 0);
   await shot("02-dashboard.png");
 

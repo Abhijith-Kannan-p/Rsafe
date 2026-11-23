@@ -4,7 +4,9 @@ import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, GlassCard, ReadinessRing, SeverityBadge, StatusPill, useToast, type Column } from "../../components";
 import { IssuePanel } from "../../components/IssuePanel";
 import { ErrorNote, Loading, PageHeader, Select, Stat } from "../../components/ui";
-import { overallReadiness, post, qs, type Issue, type SchoolSummary } from "../../lib/api";
+import { TrendChart } from "../../components/TrendChart";
+import { overallReadiness, post, qs, type Issue, type SchoolSummary, type TrendPoint } from "../../lib/api";
+import { htmlLang, useLang } from "../../lib/i18n";
 import { can, useIdentity } from "../../lib/session";
 import { useApi } from "../../lib/useApi";
 
@@ -33,6 +35,10 @@ export function Dashboard() {
 
   const summary = useApi<{ schools: SchoolSummary[] }>("/summary");
   const all = useApi<Issue[]>(`/issues${qs({ school_code: filters.school_code })}`);
+  const { rule } = useLang();
+  // the trend is per school: a principal's own, or the school picked in the filter
+  const trendSchool = me.role === "principal" ? me.school_code : can.validate(me.role) ? filters.school_code : "";
+  const trend = useApi<{ points: TrendPoint[] }>(trendSchool ? `/trend${qs({ school_code: trendSchool })}` : null);
   const openIssue = params.get("issue") ? Number(params.get("issue")) : null;
 
   const schools = useMemo(
@@ -60,6 +66,7 @@ export function Dashboard() {
   const refresh = () => {
     summary.reload();
     all.reload();
+    if (trendSchool) trend.reload();
   };
 
   const runValidation = async () => {
@@ -94,7 +101,7 @@ export function Dashboard() {
       header: "Problem",
       render: (i) => (
         <div className="max-w-xl">
-          <p className="font-medium text-cream">{i.title}</p>
+          <p className="font-medium text-cream" lang={htmlLang(rule(i.rule_id, i).lang)}>{rule(i.rule_id, i).title}</p>
           <p className="line-clamp-1 text-xs text-mist">{i.detail}</p>
         </div>
       ),
@@ -147,7 +154,7 @@ export function Dashboard() {
       {all.error && <ErrorNote error={all.error} onRetry={refresh} />}
 
       <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-        <GlassCard className="flex items-center gap-6">
+        <GlassCard className="flex items-center gap-6" data-tour="readiness">
           <ReadinessRing value={readiness} size={164} />
           <div className="text-sm text-mist">
             <p className="text-cream">
@@ -167,8 +174,16 @@ export function Dashboard() {
         </div>
       </div>
 
+      {trendSchool && trend.data && (
+        <GlassCard className="mt-4" padding="sm">
+          <div className="px-2">
+            <TrendChart points={trend.data.points} title={`Readiness over time · ${trendSchool}`} />
+          </div>
+        </GlassCard>
+      )}
+
       {held.length > 0 && (
-        <GlassCard className="mt-4 border-coral/30" padding="sm" aria-labelledby="held-title">
+        <GlassCard className="mt-4 border-coral/30" padding="sm" aria-labelledby="held-title" data-tour="held">
           <div className="flex items-center gap-2 px-2 pb-2">
             <ShieldAlert className="h-5 w-5 text-coral" aria-hidden />
             <h2 id="held-title" className="font-display text-lg font-semibold text-cream">
@@ -195,7 +210,7 @@ export function Dashboard() {
         </GlassCard>
       )}
 
-      <GlassCard className="mt-4" padding="none">
+      <GlassCard className="mt-4" padding="none" data-tour="issues">
         <div className="flex flex-wrap items-end gap-3 border-b border-white/10 p-4">
           <h2 className="mr-auto font-display text-lg font-semibold text-cream">
             Issues <span className="text-sm font-normal text-mist">({issues.length})</span>

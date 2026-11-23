@@ -1,8 +1,9 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, ChevronDown, ClipboardCheck, FileUp, ImageOff, Lock, ScanSearch, Send, UserCheck } from "lucide-react";
+import { ArrowRight, ChevronDown, ClipboardCheck, Compass, FileUp, ImageOff, Lock, ScanSearch, Send, UserCheck } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components";
+import { useTour } from "../components/Tour";
 import { EVENT, MOTTO, SHOWCASE, SYNTHETIC_LINE, TEAM } from "../copy";
 import { cn } from "../lib/cn";
 import { RoleGrid } from "./Enter";
@@ -86,6 +87,7 @@ function BrowserFrame({ file, path, title, present, webp }: FrameProps) {
 function Hero() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const tour = useTour();
   const scrollDown = () => document.getElementById("showcase")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
 
   return (
@@ -135,6 +137,13 @@ function Hero() {
               Scroll down
             </Button>
           </div>
+          <button
+            type="button"
+            onClick={tour.start}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-saffron underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-saffron"
+          >
+            <Compass className="h-4 w-4" aria-hidden /> Or take the guided tour of the demo
+          </button>
           <p className="text-sm text-mist">{SYNTHETIC_LINE}</p>
         </motion.div>
       </div>

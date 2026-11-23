@@ -75,6 +75,39 @@ def _parent_replies(s: Session, code: str) -> list[dict[str, Any]]:
     return out
 
 
+ACTION_LABEL = {
+    "issue.approve": "fixes approved", "issue.confirm": "records confirmed as right", "issue.edit": "values edited",
+    "issue.hold": "issues held", "issue.reject_suggestion": "suggestions rejected", "data.import": "files imported",
+    "validation.run": "validation runs", "export.csv": "CSV exports", "export.report": "reports opened",
+    "submit.dry_run": "test submits", "parent.confirm": "parent confirmations", "parent.report": "parent change requests",
+}
+
+
+def _audit_summary(s: Session, code: str) -> dict[str, Any]:
+    """Who did what for this school, read from the audit log, plus readiness first and now."""
+    per_person: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
+    readiness: list[int] = []
+    first_ts = last_ts = None
+    for e in s.exec(select(m.AuditEntry).order_by(m.AuditEntry.id)):
+        p = json.loads(e.payload or "{}")
+        mine = (p.get("school_code") == code or e.record_ref == f"school:{code}"
+                or (e.action == "validation.run" and code in (p.get("readiness") or {})))
+        if not mine:
+            continue
+        first_ts = first_ts or e.ts
+        last_ts = e.ts
+        if e.action == "validation.run":
+            readiness.append(p["readiness"][code])
+        if e.role == "system":
+            continue
+        per_person[(e.actor, e.role)][e.action] += 1
+    people = [{"actor": a, "role": r, "actions": dict(c), "total": sum(c.values())}
+              for (a, r), c in sorted(per_person.items(), key=lambda kv: -sum(kv[1].values()))]
+    return {"people": people, "readiness_first": readiness[0] if readiness else None,
+            "readiness_now": readiness[-1] if readiness else None, "runs": len(readiness),
+            "first_ts": first_ts, "last_ts": last_ts}
+
+
 def report_data(s: Session, code: str, rules) -> dict[str, Any]:
     school = s.get(m.School, code)
     issues = list(s.exec(select(m.Issue).where(m.Issue.school_code == code)))
@@ -94,6 +127,8 @@ def report_data(s: Session, code: str, rules) -> dict[str, Any]:
         "rules": {r.id: r.version for r in rules},
         "chain_ok": chain.ok,
         "chain_rows": chain.checked,
+        "chain_head": chain.head_hash,
+        "audit": _audit_summary(s, code),
     }
 
 
@@ -125,6 +160,15 @@ def report_html(s: Session, code: str, rules, actor: str) -> str:
         for x in d["parents"]
     ) or '<tr><td colspan="4" class="muted">No parent replies yet.</td></tr>'
     rules = ", ".join(f"{e(k)} v{e(v)}" for k, v in sorted(d["rules"].items()))
+    au = d["audit"]
+    people_rows = "".join(
+        f"<tr><td>{e(x['actor'])}</td><td>{e(x['role'])}</td><td>{x['total']}</td><td>"
+        + "; ".join(f"{n} {e(ACTION_LABEL.get(a, a))}" for a, n in sorted(x["actions"].items(), key=lambda kv: -kv[1]))
+        + "</td></tr>"
+        for x in au["people"]
+    ) or '<tr><td colspan="4" class="muted">No one has acted on this school yet.</td></tr>'
+    trend = (f"Readiness went from <b>{au['readiness_first']}%</b> at the first validation to <b>{au['readiness_now']}%</b> "
+             f"now, over {au['runs']} validation run(s)." if au["runs"] else "No validation runs yet.")
     chain = (f'<span class="ok">Verified: {d["chain_rows"]} audit rows, chain intact</span>' if d["chain_ok"]
              else '<span class="bad">Audit chain is BROKEN. Do not submit until an admin investigates.</span>')
     tone = "ok" if sm["readiness"] >= 85 else "warn" if sm["readiness"] >= 60 else "bad"
@@ -169,6 +213,11 @@ def report_html(s: Session, code: str, rules, actor: str) -> str:
   </div>
   <p class="muted">{sm['students']} student records. {d['resolved']} issue(s) cleared on re-check after a related fix.</p>
   <h2>Audit chain</h2><p>{chain}</p>
+  <p class="muted">Head hash {e((d['chain_head'] or '')[:16])}&hellip; Compare it with the Admin screen later: if any earlier row
+  is edited, verification fails and this report no longer matches.</p>
+  <h2>Audit summary</h2>
+  <p>{trend}</p>
+  <table><thead><tr><th>Person</th><th>Role</th><th>Actions</th><th>What they did</th></tr></thead><tbody>{people_rows}</tbody></table>
   <h2>Held for review</h2>
   <table><thead><tr><th>Rule</th><th>Record</th><th>Reason</th></tr></thead><tbody>{held_rows}</tbody></table>
   <h2>Still open, by rule</h2><ul>{open_rows}</ul>

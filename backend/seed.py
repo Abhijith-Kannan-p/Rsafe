@@ -159,7 +159,8 @@ class Generator:
             "school_code": s["school_code"],
             "admission_no": s["admission_no"],
             "name": s["name"] if name is None else name,
-            "dob": s["dob"],
+            # a real register usually holds the right date even when the digital file is wrong
+            "dob": s.pop("_register_dob", s["dob"]),
         })
 
     def inject(self, rule: str, s: dict, note: str, entity: str = "student") -> None:
@@ -214,11 +215,13 @@ class Generator:
             s["_register_name"] = bad
             self.inject("STU-001", s, note)
 
-        # STU-002: DOB missing, unparseable, or out of age band
-        s = pick(); s["dob"] = ""; self.inject("STU-002", s, "dob missing")
-        s = pick(); s["dob"] = "31/02/2015"; self.inject("STU-002", s, "impossible date 31 Feb")
+        # STU-002: DOB missing, unparseable, or out of age band. For three of them the admission
+        # register keeps the true date (as a paper register would), so Rsafe can suggest it.
+        s = pick(); s["_register_dob"] = s["dob"]; s["dob"] = ""; self.inject("STU-002", s, "dob missing")
+        s = pick(); s["_register_dob"] = s["dob"]; s["dob"] = "31/02/2015"
+        self.inject("STU-002", s, "impossible date 31 Feb")
         s = pick(); s["dob"] = "2013-13-05"; self.inject("STU-002", s, "unparseable format")
-        s = pick(); s["class_grade"] = 8; s["dob"] = fmt(date(2023, 6, 14))
+        s = pick(); s["_register_dob"] = s["dob"]; s["class_grade"] = 8; s["dob"] = fmt(date(2023, 6, 14))
         self.inject("STU-002", s, "age 3 in class 8 (outside age band)")
 
         # STU-003: gender missing or inconsistent with prior-year record

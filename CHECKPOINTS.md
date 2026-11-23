@@ -592,3 +592,113 @@ failure (502, 401, malformed response) showed its intended message.
   - Rule coverage (9) is covered by the "Addresses" column on the Rules screen.
   - Validation time (10) is covered by the "Run validation" toast and `npm run bench`.
 - **The audit screenshot** shows the broken row and toast but not the top banner, as noted in Phase 7.
+
+## Extras: optional features 1 to 10 (23 Nov 2026)
+
+### What works
+1. **Demo mode.**
+   - **Guided tour:** a 10-step card follows DEMO_SCRIPT.md. Each step signs in as the right role and
+     school, opens the screen and outlines what to look at. Start it from **Tour** in the top bar, the
+     landing page's "Or take the guided tour", or the command palette. The tour only navigates and
+     explains; the person still presses every button. It survives a reload (session storage).
+   - **Reset demo data:** `POST /api/demo/reset` (any signed-in role, demo mode only), offered on Admin
+     **System** and in the tour's first step. It rebuilds from the committed synthetic data, and the new
+     audit log begins `data.load`, `validation.run`, `demo.reset` (by whom).
+2. **Test submit** (`POST /api/submit/dry-run`, Principal and MIS; button on Export).
+   - Runs every rule again in memory and matches the findings to people's decisions by fingerprint, the
+     same way a real run does.
+   - Gives every row's values (Aadhaar masked) and a verdict: would send, sent with a flag, likely
+     rejected, or held back.
+   - Nothing is stored or exported; one `submit.dry_run` audit row records the check.
+3. **Smart fix suggestions.**
+   - **STU-001 (names):** a missing name, or one with a digit, gets the admission register's name if that
+     name is itself clean.
+   - **STU-002 (dates):** a missing, impossible or unreadable date gets the register's date. An age-band
+     problem gets it only if the register's date fits the class. A clearly swapped `YYYY-DD-MM` is
+     suggested at Medium, and only if it fits the class.
+   - Without evidence, nothing is guessed (tested).
+   - The reason is shown beside the value ("Why this value: …").
+   - **Reject suggestion** (`POST /api/issues/{id}/reject-suggestion`) audits `issue.reject_suggestion`
+     with the rejected value. The record is untouched and the issue stays open. Re-runs don't bring the
+     suggestion back, and Approve then confirms the record as it is.
+4. **"Why was this flagged? How Rsafe decided"** in the issue panel shows:
+   - the rule version, check name, scope, hold flag and parameters
+   - the data the check reads (declared per check with `@check(..., uses=...)`)
+   - a **History** section of this issue's audit rows
+5. **Hindi and Malayalam reasons.**
+   - `backend/rules/i18n.json` holds the rule titles, reasons and fixes (`GET /api/rules/i18n`).
+   - The language picker sits in the top bar and on My record, and the choice is remembered per browser.
+   - Translated text carries a `lang` attribute and a "Machine translation. Not yet reviewed…" note.
+   - A test keeps the English copy identical to the YAML and checks every rule has Devanagari and
+     Malayalam text.
+6. **Readiness trend** (`GET /api/trend`, read from `validation.run` audit rows) on the Dashboard.
+   - One saffron line with 8px markers and only the latest value labelled.
+   - A crosshair tooltip, on hover and with the arrow keys, names the action that caused each run.
+   - A "Show as table" view. Built to the dataviz checklist; line contrast was validated against the
+     surface.
+7. **Command palette** (Ctrl+K or ⌘K, or **Search** in the top bar).
+   - Finds screens, rules (opening their issues) and, for staff, students by name or ID through
+     `GET /api/search`.
+   - Search is scoped like everything else (a teacher sees only their students, a parent cannot search)
+     and never matches Aadhaar.
+   - Combobox/listbox pattern with arrow-key navigation.
+8. **Printable report:** the readiness report gains an **Audit summary** (who did what for this school,
+   and readiness from the first run to now) and the chain's head hash.
+9. **Rule coverage** (`GET /api/coverage`, page **Coverage**): the rules grouped by the government failure
+   reason they address, with found, still open, fixed and cleared counts for the schools you can see.
+10. **Health and metrics.**
+    - Every validation run now records `timing` (read, rules, store, total, records) in its audit payload
+      and response.
+    - `GET /api/metrics` is public like `/api/health`, with no names or IDs. It reports status, uptime,
+      counts, rule versions, the last 20 runs with ms per 1,000 records, and the median.
+    - Admin **System** shows it all.
+
+Also:
+- Every new screen and state scores Lighthouse accessibility **100**: landing, dashboard with trend, issue
+  panel, export, coverage, system, my record.
+- Landing screenshots are regenerated, and caption 3 now mentions the suggestion's reason and Reject.
+
+### How to verify
+```
+npm run test     # expect: 246 passed
+npm run seed && npm run dev
+```
+- **Tour:** press Tour and step through all 10 steps.
+- **Suggestions:**
+  1. As Principal SYN-0002, open the STU-002 "31/02/2015" issue: the suggestion is 25/07/2016 from the
+     register.
+  2. Open "Why was this flagged?".
+  3. Press Reject suggestion and watch it appear in History.
+- **Trend:** approve Ananya's fix and the readiness line steps up, with the fix named in its tooltip.
+- **Language:** switch to हिन्दी and open any issue.
+- **Test submit:** Export → Test submit.
+- **Palette:** Ctrl+K, then "bhavya".
+- **Coverage:** open Coverage from the sidebar.
+- **Admin:** System, then Reset demo data.
+
+My checks:
+- **Browser walkthrough:** every feature passed, with no console errors. No horizontal scroll at 390px.
+- **Demo numbers:** checked through the API. On fresh data, approving Ananya's fix gives 88%, and then
+  the register date gives 89%; DEMO_SCRIPT.md is updated to match.
+
+### Decisions taken (ambiguities)
+- **The seed's admission register now keeps the true date** for three injected STU-002 cases (missing,
+  31 Feb, age band), as a paper register would. Flags and the generator's random sequence are unchanged
+  (ground-truth tests pass). Names were not changed this way, because a correct register name would also
+  trigger STU-005 and change the ground truth.
+- **Reject is stored by clearing the suggestion** on the issue, plus the audit row, so no schema change
+  was needed. The rejected value is kept in the audit log and shown in History.
+- **Reset is open to any signed-in role in demo mode**, because the tour needs it from the principal's
+  screen. Each reset is named in the new log. `RSAFE_DEMO_MODE=0` removes it, as it does Tamper.
+- **Metrics are public, like `/api/health`.** A test proves they hold no names, refs or 12-digit numbers.
+- **Translations cover rule texts only.** Record details (which embed values) and the interface stay in
+  English, and the UI says so.
+- **The trend is per school:** the Principal's own, or the school picked in the Dashboard filter for MIS
+  and Admin.
+
+### Known gaps
+- No fluent speaker has reviewed the Hindi and Malayalam texts. They are labelled as such everywhere.
+- The palette opens a student's first issue; a student with no issues opens the issue list (there is no
+  per-student record page).
+- Lighthouse can't open the tour card or the palette by itself, so those two overlays were checked by
+  keyboard and role queries in the walkthrough, not scored.

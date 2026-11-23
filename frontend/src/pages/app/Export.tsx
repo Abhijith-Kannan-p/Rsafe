@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { GlassCard, ReadinessRing, useToast } from "../../components";
+import { TestSubmit } from "../../components/TestSubmit";
 import { ErrorNote, Loading, PageHeader, Select, Stat } from "../../components/ui";
 import { qs, type SchoolSummary } from "../../lib/api";
 import { cn } from "../../lib/cn";
@@ -91,6 +92,10 @@ export function Export() {
           </a>
         </GlassCard>
       </div>
+      <div className="mt-4" data-tour="test-submit">
+        <TestSubmit key={school.school_code} schoolCode={school.school_code} />
+      </div>
+
       {me.role === "mis_coordinator" && <p className="mt-4 text-xs text-mist">Exports are recorded in the audit log under your name.</p>}
     </div>
   );

@@ -45,7 +45,7 @@ Open http://127.0.0.1:5173. **Enter Rsafe** lets you pick a demo role. For a gui
 
 | Command | What it does |
 |---|---|
-| `npm run test` | 220 backend tests (about 20 to 45 s) |
+| `npm run test` | 246 backend tests (about 20 to 45 s) |
 | `npm run seed` | rebuild the synthetic data and database. This also resets the demo. |
 | `npm run build` | type-check and build the frontend |
 | `npm run bench` | time validation on about 5,000 synthetic students (throwaway database) |
@@ -205,6 +205,23 @@ A test ([backend/tests/test_privacy.py](backend/tests/test_privacy.py)) proves t
     you can watch verification catch it.
   - That button exists only with `RSAFE_DEMO_MODE=1`, which is the default for this prototype.
 
+## Extra features
+
+All ten optional features from the brief are built, tested and checked in the browser.
+
+| # | Feature | Where | What it does |
+|---|---|---|---|
+| 1 | Demo mode | **Tour** in the top bar, "Or take the guided tour" on the landing page; Admin **System → Reset demo data** | A 10-step tour card walks the demo story, switching role and screen and outlining what to look at. Reset rebuilds the synthetic data; the new audit log starts with a row naming who reset it. |
+| 2 | Test submit | **Export → Test submit** (`POST /api/submit/dry-run`) | Runs every rule again in memory and shows each row's values and verdict: would send, sent with a flag, likely rejected, or held back. Nothing is exported or changed; the check itself is audited. |
+| 3 | Smart fix suggestions | Issue panel | Names and dates of birth get a proposed value only when there is evidence: the school's admission register, or an obviously swapped month and day that still fits the class. The reason is shown beside the value. **Reject suggestion** records the rejection and leaves the record untouched. |
+| 4 | Why was this flagged? | Issue panel | Shows the rule version, the check that ran, the data it read, the rule's settings, and the issue's history from the audit log. |
+| 5 | Hindi and Malayalam | Language picker in the top bar and on My record | Rule titles, reasons and fixes in English, हिन्दी or മലയാളം, from [backend/rules/i18n.json](backend/rules/i18n.json). Hindi and Malayalam are machine translations, labelled "Not yet reviewed" wherever they appear. Record details and the rest of the UI stay in English. |
+| 6 | Readiness trend | Dashboard (Principal; MIS and Admin after picking a school) | A line of readiness after every validation run, read from the audit log. Hover or use the arrow keys to see which action caused each step; a table view is included. |
+| 7 | Command palette | **Ctrl+K** (or ⌘K), or **Search** in the top bar | Jump to any screen or rule, or to a student by name or ID within your own scope (`GET /api/search`; never searches Aadhaar). |
+| 8 | Printable report | **Export → Open report** | Adds an audit summary (who did what, and readiness from the first run to now) and the chain's head hash to the one-page report. |
+| 9 | Rule coverage | **Coverage** (Principal, MIS, Admin) | Groups the rules by the government failure reason each addresses, with what each has found, fixed and cleared. |
+| 10 | Health and metrics | `GET /api/metrics`; Admin **System** | Timing for every validation run (read, rules, store, total, per 1,000 records), counts and rule versions. Public like `/api/health`, with no names or IDs. |
+
 ## What is mocked
 
 - **Data:** all of it is synthetic. The generator ([backend/seed.py](backend/seed.py)) uses a fixed seed and
@@ -214,6 +231,8 @@ A test ([backend/tests/test_privacy.py](backend/tests/test_privacy.py)) proves t
   saved to the audit log and never changes the record.
 - **UDISE+:** not contacted. Export produces files a person would upload by hand.
 - **"Today":** pinned to 16 Nov 2026 (`RSAFE_TODAY`), so date-based rules give the same results on any day.
+- **Translations:** the Hindi and Malayalam texts are machine translations and have not been reviewed by a
+  fluent speaker.
 
 ## Measured quality
 
@@ -233,10 +252,10 @@ Reading the database dominates full validation. Reading plain rows instead of OR
 
 **Accessibility** (Lighthouse 13.6, desktop, Microsoft Edge): **100** on every main screen and state:
 - landing, role picker
-- dashboard, dashboard with the issue panel open
-- upload, duplicates, export, rules
+- dashboard (with the readiness trend), dashboard with the issue panel open
+- upload, duplicates, export (with Test submit), rules, coverage
 - my classes, cluster, school drill-in
-- audit log, my record
+- audit log, system, my record
 
 **Production landing page** (Lighthouse): performance, accessibility and best practices all score 100, on
 both mobile and desktop emulation.
@@ -251,12 +270,15 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - An expired session returns you to the role picker.
 - A screen that fails to render shows a recovery card while the navigation stays usable.
 
-**Tests:** 220 pytest tests:
+**Tests:** 246 pytest tests:
 - every rule, with good and bad records, plus ground truth on the seed
+- smart suggestions: register values, swapped dates, and never guessing without evidence
 - token privacy
 - the audit chain, including tamper detection
 - role access for every route
 - upload, export and views
+- the extras: reset, test submit, trend, coverage, search scope, translations in sync with the rules,
+  metrics without personal data, reject suggestion, the report's audit summary
 
 ## Future work
 
@@ -264,10 +286,8 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - A real consent and confirmation channel for parents (SMS or app), and a staff inbox for their replies.
 - Matching across clusters, through a privacy-preserving service that holds no school keys.
 - More rules: teacher qualifications against posts, enrolment trends, infrastructure photos.
-- Plain-language reasons in Hindi and Malayalam.
+- Have fluent speakers review the Hindi and Malayalam texts, and translate the rest of the interface.
 - Postgres and a job queue for district-scale validation. The engine is already a pure function over
   records.
-- The optional extras from the brief are not built: guided tour, dry-run submit, readiness trend, command
-  palette and others.
 
 Build history and decisions, phase by phase, are in [CHECKPOINTS.md](CHECKPOINTS.md).

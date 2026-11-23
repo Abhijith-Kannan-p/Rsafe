@@ -1,6 +1,10 @@
 import {
   BookOpen,
   BookUser,
+  Compass,
+  Gauge,
+  ListChecks,
+  Search,
   Network,
   Users,
   Download,
@@ -12,13 +16,16 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABEL, type Role, type SchoolOption, type SchoolSummary } from "../lib/api";
 import { cn } from "../lib/cn";
 import { can, HOME, useSession } from "../lib/session";
 import { useApi } from "../lib/useApi";
+import { LanguageSelect } from "../lib/i18n";
+import { CommandPalette } from "./CommandPalette";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { useTour } from "./Tour";
 import { useToast } from "./Toast";
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
@@ -30,6 +37,7 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/app/duplicates", label: "Duplicates", icon: GitCompareArrows },
     { to: "/app/export", label: "Export", icon: Download },
     { to: "/app/rules", label: "Rules", icon: BookOpen },
+    { to: "/app/coverage", label: "Coverage", icon: ListChecks },
   ],
   teacher: [
     { to: "/app/classes", label: "My classes", icon: Users },
@@ -42,12 +50,15 @@ const NAV: Record<Role, NavItem[]> = {
     { to: "/app/duplicates", label: "Duplicates", icon: GitCompareArrows },
     { to: "/app/export", label: "Export", icon: Download },
     { to: "/app/rules", label: "Rules", icon: BookOpen },
+    { to: "/app/coverage", label: "Coverage", icon: ListChecks },
   ],
   admin: [
     { to: "/app/audit", label: "Audit log", icon: ShieldCheck },
     { to: "/app/rules", label: "Rules", icon: BookOpen },
+    { to: "/app/coverage", label: "Coverage", icon: ListChecks },
     { to: "/app/cluster", label: "Schools", icon: Network },
     { to: "/app/dashboard", label: "All issues", icon: LayoutDashboard },
+    { to: "/app/system", label: "System", icon: Gauge },
   ],
   student_parent: [{ to: "/app/my-record", label: "My record", icon: BookUser }],
 };
@@ -129,6 +140,19 @@ export function AppShell() {
   const { identity, loading, signOut } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+  const tour = useTour();
+  const [palette, setPalette] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette((p) => !p);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const summary = useApi<{ schools: SchoolSummary[] }>(identity ? `/summary?as=${encodeURIComponent(identity.actor)}` : null);
 
   if (loading) {
@@ -187,6 +211,25 @@ export function AppShell() {
           <span className="rounded-full bg-violet/20 px-3 py-1 text-xs font-semibold text-violet ring-1 ring-inset ring-violet/40">
             Synthetic data
           </span>
+          <button
+            type="button"
+            onClick={() => setPalette(true)}
+            aria-keyshortcuts="Control+K"
+            aria-label="Search screens, rules and records (Ctrl+K)"
+            className="flex h-9 items-center gap-2 rounded-full border border-white/15 bg-bg-mid/70 px-3 text-sm text-mist transition hover:text-cream focus-visible:outline-2 focus-visible:outline-saffron"
+          >
+            <Search className="h-4 w-4" aria-hidden /> <span className="hidden lg:inline">Search</span>
+            <kbd className="hidden rounded border border-white/15 px-1 text-[11px] lg:inline">Ctrl K</kbd>
+          </button>
+          <button
+            type="button"
+            onClick={tour.start}
+            className="flex h-9 items-center gap-2 rounded-full border border-white/15 bg-bg-mid/70 px-3 text-sm text-mist transition hover:text-cream focus-visible:outline-2 focus-visible:outline-saffron"
+          >
+            <Compass className="h-4 w-4" aria-hidden /> <span className="hidden lg:inline">Tour</span>
+            <span className="sr-only lg:hidden">Start the guided tour</span>
+          </button>
+          <LanguageSelect />
           <RoleSwitcher role={identity.role} school={identity.school_code} />
           <nav className="-mx-1 flex w-full gap-1 overflow-x-auto md:hidden" aria-label="Sections">
             <NavLinks items={NAV[identity.role]} compact />
@@ -197,6 +240,7 @@ export function AppShell() {
           <ErrorBoundary resetKey={location.pathname}>
             <Outlet key={identity.actor} />
           </ErrorBoundary>
+          <CommandPalette open={palette} onClose={() => setPalette(false)} role={identity.role} screens={NAV[identity.role]} />
         </main>
       </div>
     </div>

@@ -12,7 +12,11 @@ npm run dev     # leave running
 
 - Open http://127.0.0.1:5173 in a browser window about 1440 px wide, zoom 100%.
 - Close other tabs. Keep this script on a second screen.
-- If something goes wrong mid-demo, run `npm run seed` again and reload. That reset takes about 3 seconds.
+- If something goes wrong mid-demo, reset: as Admin, **System → Reset demo data** (or `npm run seed`), then
+  reload. That takes about 3 seconds.
+- **Short on time or presenting alone?** Press **Tour** in the top bar (or "Or take the guided tour" on the
+  landing page). A card walks this same story in 10 steps, switching role and screen for you and
+  outlining what to look at. Step 1 offers **Reset demo data first**.
 
 ## The story
 
@@ -49,12 +53,17 @@ npm run dev     # leave running
   - the reason in plain language,
   - the evidence it used: the admission register says 'Ananya R. Kumar',
   - and a suggested fix, shown as a word diff."
+- **Open** "Why was this flagged? How Rsafe decided" for a moment. It shows the rule version, the check
+  that ran, the data it read and the rule's settings.
 - **Type a note** (optional), for example "Matches the admission register", then click **Approve fix**.
   The toast reads "Written to the audit log as entry #…".
 - **Press Esc.** Set **Rule** to **STU-002** and click the **31/02/2015** row.
-- **Click:** **Edit**. The field is already set to date of birth. Type `28/02/2015`, add a note, and click
-  **Save**.
-- **Point at:** readiness is now **89%**.
+- **Point at** the smart suggestion: **25/07/2016**, with "Why this value: High: taken from the school's
+  admission register".
+- **Say:** "Rsafe only suggests what it can back with evidence. If the suggestion were wrong I could press
+  Reject suggestion and type the right date. Here the register is right, so I approve it."
+- **Click:** **Approve fix**. The readiness ring and the **Readiness over time** line both rise to **89%**.
+  Hover over the last point: the tooltip names the fix that caused the change.
 - **Say:** "Nothing changed by itself. Both changes are in the audit log under my name."
 - **Optional:** type an Aadhaar-like number into a note. Rsafe refuses it, because notes are kept forever.
 
@@ -110,12 +119,21 @@ npm run dev     # leave running
 
 - **Parent view:** switch to **Student and Parent**.
   - Ananya's name now shows as "Ananya R. Kumar", and that check reads "Sorted".
+  - Switch the language picker to **हिन्दी** or **മലയാളം**. The reasons change language, each marked
+    "Machine translation. Not yet reviewed".
   - Click **Something is wrong**, type a short comment, then **Send me a code**.
   - Type the demo code shown on screen and click **Verify and send**.
   - Say: "This is a mockup. No SMS is sent, and the reply goes to the audit log without changing the record."
-- **Export:** as **Principal**, open **Export**, then **Open report**. The one-page readiness report lists
-  issues fixed and held, who approved each change, the rule versions, the audit-chain status and parent
-  replies.
+- **Test submit:** as **Principal**, open **Export** and press **Test submit**. Every rule runs again and
+  each row shows whether it would be sent, sent with a flag, likely rejected or held back. Nothing is
+  exported.
+- **Report:** on the same screen, **Open report**. The one-page readiness report has an audit summary
+  (who did what, and readiness from the first run to now), the chain's head hash, and the decisions, held
+  flags and parent replies.
+- **Command palette:** press **Ctrl+K** and type "bhavya" or "STU-007" to jump straight to a student or rule.
+- **Coverage:** **Coverage** in the sidebar groups the rules by the failure reason each one addresses, with
+  what each has caught.
+- **System (Admin):** live validation timings per 1,000 records, and **Reset demo data**.
 - **Teacher:** switch to **Teacher** to see *My classes*: only their own students, each problem as a rule
   badge.
 - **Rules:** the **Rules** screen lists all 11 rules with their version and the government failure reason

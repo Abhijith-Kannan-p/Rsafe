@@ -34,16 +34,17 @@ class Finding:
 class CheckDef:
     fn: Callable[..., Any]
     scope: Literal["record", "dataset"]
+    uses: tuple[str, ...] = ()  # the data the check reads, shown in "Why was this flagged?"
 
 
 REGISTRY: dict[str, CheckDef] = {}
 
 
-def check(name: str, scope: Literal["record", "dataset"] = "record"):
+def check(name: str, scope: Literal["record", "dataset"] = "record", uses: tuple[str, ...] = ()):
     def register(fn):
         if name in REGISTRY:
             raise ValueError(f"check '{name}' registered twice")
-        REGISTRY[name] = CheckDef(fn, scope)
+        REGISTRY[name] = CheckDef(fn, scope, tuple(uses))
         return fn
 
     return register
@@ -89,11 +90,17 @@ def _is_name_char(c: str) -> bool:
 
 # ---------------------------------------------------------------- STU-001
 
-@check("name_wellformed")
+@check("name_wellformed", uses=("the student's name", 'the admission register (name), to suggest a fix'))
 def name_wellformed(rec: dict, ctx: Context, params: dict) -> Finding | None:
     raw = rec.get("name") or ""
     name = raw.strip()
+    reg_name = _register_name(rec, ctx)
+    adm = rec.get("admission_no", "")
     if not name:
+        if reg_name:
+            return Finding("No name is recorded for this student.", {"name": raw, "register_name": reg_name},
+                           field="name", suggested_value=reg_name,
+                           confidence=f"High: taken from the school's admission register (admission no {adm}).")
         return Finding("No name is recorded for this student.", {"name": raw}, field="name")
 
     digits = sorted({c for c in name if c.isdigit()})
@@ -110,24 +117,105 @@ def name_wellformed(rec: dict, ctx: Context, params: dict) -> Finding | None:
     if not problems:
         return None
 
-    suggestion = None
-    if not digits:  # we can safely drop symbols and spaces, but cannot guess a letter hidden behind a digit
-        cleaned = " ".join("".join(c for c in name if _is_name_char(c)).split())
-        suggestion = cleaned or None
+    evidence: dict[str, Any] = {"name": raw, "digits": digits, "symbols": symbols, "extra_space": extra_space}
+    suggestion, confidence = None, None
+    cleaned = " ".join("".join(c for c in name if _is_name_char(c)).split())
+    if reg_name:
+        evidence["register_name"] = reg_name
+    if not digits and cleaned:
+        # dropping symbols and spaces is safe; say so when the register agrees
+        suggestion = cleaned
+        if reg_name and _norm_name_tokens(cleaned) == _norm_name_tokens(reg_name):
+            confidence = "High: once the symbol or space is removed, it matches the admission register."
+    elif digits and reg_name:
+        # a digit may hide a letter; the register is the school's own record of the right spelling
+        sim = name_similarity(cleaned, reg_name)
+        suggestion = reg_name
+        confidence = (f"High ({sim:.2f}): the admission register (admission no {adm}) has '{reg_name}'."
+                      if sim >= 0.8 else
+                      f"Medium ({sim:.2f}): the admission register has '{reg_name}'. Check it is the same student.")
+    else:
+        confidence = "A digit may hide a letter (for example 4 for a). Check the admission register."
 
     return Finding(
         detail=f"The name '{raw}' {' and '.join(problems)}.",
-        evidence={"name": raw, "digits": digits, "symbols": symbols, "extra_space": extra_space},
+        evidence=evidence,
         suggested_value=suggestion,
         field="name",
-        confidence=None if suggestion else "A digit may hide a letter (for example 4 for a). Check the admission register.",
+        confidence=confidence,
     )
 
 
 # ---------------------------------------------------------------- STU-002
 
-@check("dob_valid")
+@check("dob_valid", uses=("the student's date of birth and class", 'the admission register (date of birth), to suggest a fix', 'the age band for each class (rule parameters)'))
 def dob_valid(rec: dict, ctx: Context, params: dict) -> Finding | None:
+    f = _dob_problem(rec, ctx, params)
+    if f is None or f.suggested_value:
+        return f
+    return _suggest_dob(rec, ctx, params, f)
+
+
+def _register_row(rec: dict, ctx: Context) -> dict | None:
+    return ctx.admission_register.get((rec.get("school_code", ""), rec.get("admission_no", "")))
+
+
+def _register_name(rec: dict, ctx: Context) -> str | None:
+    """The register's name for this student, if it is itself a clean name."""
+    reg = _register_row(rec, ctx)
+    name = " ".join(str((reg or {}).get("name") or "").split())
+    if name and all(_is_name_char(c) or c == " " for c in name) and not any(c.isdigit() for c in name):
+        return name
+    return None
+
+
+def _age_band(grade: Any, params: dict) -> tuple[int, int] | None:
+    if grade in (None, ""):
+        return None
+    g = int(grade)
+    return g + int(params.get("min_offset", 4)), g + int(params.get("max_offset", 8))
+
+
+def _suggest_dob(rec: dict, ctx: Context, params: dict, f: Finding) -> Finding:
+    """Propose a date only from evidence: the school's admission register, or an obviously swapped
+    month and day. Never invent a date."""
+    raw = (rec.get("dob") or "").strip()
+    reg = _register_row(rec, ctx)
+    reg_text = str((reg or {}).get("dob") or "").strip()
+    reg_dob = parse_date(reg_text)
+    problem = f.evidence.get("problem")
+    adm = rec.get("admission_no", "")
+    if reg_dob and reg_text != raw and reg_dob <= ctx.today:
+        band = _age_band(rec.get("class_grade"), params)
+        fits = band is None or band[0] <= age_on(reg_dob, ctx.age_reference_date) <= band[1]
+        if problem == "age_band" and not fits:
+            return f
+        f.evidence["register_dob"] = reg_text
+        if problem == "age_band":
+            f.confidence = (f"Medium: the admission register (admission no {adm}) has {reg_text}, which fits "
+                            f"class {rec.get('class_grade')}. Check the birth certificate before approving.")
+        else:
+            f.confidence = f"High: taken from the school's admission register (admission no {adm})."
+        f.suggested_value = reg_text
+        return f
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", raw)
+    if problem == "unparseable" and m:
+        y, a, b = (int(x) for x in m.groups())
+        if a > 12 and b <= 12:
+            try:
+                swapped = date(y, b, a)
+            except ValueError:
+                return f
+            band = _age_band(rec.get("class_grade"), params)
+            if band and not band[0] <= age_on(swapped, ctx.age_reference_date) <= band[1]:
+                return f  # the swapped date does not fit the class either: do not guess
+            f.suggested_value = swapped.strftime("%d/%m/%Y")
+            f.confidence = ("Medium: the month and day look swapped (year-day-month). No register entry "
+                            "confirms it; check the birth certificate.")
+    return f
+
+
+def _dob_problem(rec: dict, ctx: Context, params: dict) -> Finding | None:
     raw = (rec.get("dob") or "").strip()
     grade = rec.get("class_grade")
     ev: dict[str, Any] = {"dob": raw, "class": grade}
@@ -177,7 +265,7 @@ def dob_valid(rec: dict, ctx: Context, params: dict) -> Finding | None:
 
 # ---------------------------------------------------------------- STU-003
 
-@check("gender_consistent")
+@check("gender_consistent", uses=("the student's gender", "last year's record (gender)"))
 def gender_consistent(rec: dict, ctx: Context, params: dict) -> Finding | None:
     raw = rec.get("gender")
     current = normalise_gender(raw)
@@ -212,7 +300,7 @@ def gender_consistent(rec: dict, ctx: Context, params: dict) -> Finding | None:
 
 # ---------------------------------------------------------------- STU-004
 
-@check("aadhaar_present")
+@check("aadhaar_present", uses=('the Aadhaar status and whether a token exists (never the number)',))
 def aadhaar_present(rec: dict, ctx: Context, params: dict) -> Finding | None:
     status = str(rec.get("aadhaar_status") or "").strip().lower().replace(" ", "_")
     last4 = rec.get("aadhaar_last4") or None
@@ -252,7 +340,7 @@ def name_similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, ta, tb).ratio()
 
 
-@check("name_matches_register")
+@check("name_matches_register", uses=("the student's name and admission number", 'the admission register (name)'))
 def name_matches_register(rec: dict, ctx: Context, params: dict) -> Finding | None:
     name = (rec.get("name") or "").strip()
     reg = ctx.admission_register.get((rec.get("school_code", ""), rec.get("admission_no", "")))
@@ -288,7 +376,7 @@ def name_matches_register(rec: dict, ctx: Context, params: dict) -> Finding | No
 
 # ---------------------------------------------------------------- STU-006 (dataset)
 
-@check("duplicate_in_school", scope="dataset")
+@check("duplicate_in_school", scope="dataset", uses=("every student's school token (keyed HMAC of Aadhaar) in this school",))
 def duplicate_in_school(records: list[dict], ctx: Context, params: dict) -> list[tuple[dict, Finding]]:
     out: list[tuple[dict, Finding]] = []
     by_token: dict[tuple[str, str], list[dict]] = {}
@@ -329,7 +417,7 @@ def duplicate_in_school(records: list[dict], ctx: Context, params: dict) -> list
 
 # ---------------------------------------------------------------- STU-007 (dataset)
 
-@check("duplicate_across_schools", scope="dataset")
+@check("duplicate_across_schools", scope="dataset", uses=("every student's cluster match token (keyed HMAC of Aadhaar) in the cluster",))
 def duplicate_across_schools(records: list[dict], ctx: Context, params: dict) -> list[tuple[dict, Finding]]:
     """Matches on match_token only. Names are never used, and never shown across schools."""
     groups: dict[str, list[dict]] = {}
@@ -362,7 +450,7 @@ def _fmt(d: date) -> str:
     return d.strftime("%d/%m/%Y")
 
 
-@check("dropout_with_activity")
+@check("dropout_with_activity", uses=('the enrolment status', 'attendance in the last 30 days', 'fee payments in the last 30 days'))
 def dropout_with_activity(rec: dict, ctx: Context, params: dict) -> Finding | None:
     if str(rec.get("enrolment_status") or "").strip().lower() != "dropout":
         return None
@@ -389,7 +477,7 @@ def dropout_with_activity(rec: dict, ctx: Context, params: dict) -> Finding | No
 
 # ---------------------------------------------------------------- TCH-001
 
-@check("teacher_subject_match")
+@check("teacher_subject_match", uses=("the teacher's qualified subjects", 'the timetable (teacher assignments)'))
 def teacher_subject_match(rec: dict, ctx: Context, params: dict) -> list[Finding]:
     qualified = [s.strip() for s in str(rec.get("subjects") or "").split(";") if s.strip()]
     lower = {s.lower() for s in qualified}
@@ -414,7 +502,7 @@ FACILITY_LABELS = {
 }
 
 
-@check("facility_matches_log")
+@check("facility_matches_log", uses=("the facility's reported status", 'the maintenance log'))
 def facility_matches_log(rec: dict, ctx: Context, params: dict) -> Finding | None:
     log = ctx.maintenance.get(rec.get("facility_ref", ""), [])
     if not log:
@@ -444,7 +532,7 @@ def facility_matches_log(rec: dict, ctx: Context, params: dict) -> Finding | Non
 CLOSED = ("closed", "merged")
 
 
-@check("transfer_after_closure")
+@check("transfer_after_closure", uses=('the previous school code and transfer status', 'the school list (closed or merged schools)'))
 def transfer_after_closure(rec: dict, ctx: Context, params: dict) -> Finding | None:
     prev = str(rec.get("previous_school_code") or "").strip()
     old = ctx.schools.get(prev) if prev else None

@@ -98,7 +98,33 @@ export type Issue = {
 export type IssueDetail = Issue & {
   record: Record<string, string | number | null>;
   editable_fields: string[];
-  rule: { id: string; version: string; title: string; addresses: string } | null;
+  rule: RuleExplain | null;
+  history: IssueHistory[];
+};
+
+export type RuleExplain = {
+  id: string;
+  version: string;
+  title: string;
+  addresses: string | null;
+  severity: Severity;
+  check: string;
+  scope: "record" | "dataset";
+  hold: boolean;
+  params: Record<string, unknown>;
+  uses: string[];
+};
+
+export type IssueHistory = {
+  id: number;
+  ts: string;
+  actor: string;
+  action: string;
+  field: string | null;
+  old: unknown;
+  new: unknown;
+  rejected_value: string | null;
+  note: string;
 };
 
 export type ActionResult = { issue: Issue; audit_id: number; summary: SchoolSummary };
@@ -216,4 +242,61 @@ export type MyRecord = {
   school: { code: string; name: string };
   issues: { id: number; rule_id: string; severity: Severity; status: IssueStatus; title: string; message: string; fix: string }[];
   confirmation: Confirmation | null;
+};
+
+// ---- extra features
+
+export type Verdict = "would_send" | "would_send_flagged" | "likely_rejected" | "held_back";
+export type DryRunFinding = { rule_id: string; severity: Severity; title: string; detail: string; decision: string };
+export type DryRun = {
+  school_code: string;
+  rules: Record<string, string>;
+  ran_ms: number;
+  records: number;
+  verdicts: Record<Verdict, number>;
+  decisions: Record<string, number>;
+  would_pass_pct: number;
+  ready: boolean;
+  other_findings: (DryRunFinding & { entity: string; ref: string })[];
+  columns: string[];
+  rows: { values: Record<string, string | number | null>; verdict: Verdict; findings: DryRunFinding[] }[];
+  exported: false;
+};
+
+export type TrendPoint = {
+  audit_id: number;
+  ts: string;
+  readiness: number;
+  cause: { action: string; actor: string; record: string; rule_id: string | null } | null;
+};
+
+export type CoverageRule = {
+  id: string; version: string; title: string; severity: Severity; entity: string; hold: boolean;
+  found: number; active: number; fixed: number; resolved: number;
+};
+export type Coverage = {
+  schools: string[];
+  reasons: { reason: string; rules: CoverageRule[]; found: number; active: number; fixed: number; resolved: number }[];
+};
+
+export type SearchHit = { student_ref: string; name: string; school_code: string; class: string; active: number; issue_id: number | null };
+
+export type ValidationRun = {
+  audit_id: number; ts: string; schools: number; records: number;
+  total_ms: number; rules_ms: number; read_ms: number; store_ms: number; ms_per_1000_records: number | null;
+};
+export type Metrics = {
+  status: string; version: string; synthetic: boolean; uptime_s: number;
+  rules: { loaded: number; versions: Record<string, string> };
+  data: Record<string, number>;
+  issues: Record<string, number>;
+  audit_rows: number;
+  validation: { recent_runs: ValidationRun[]; median_ms_per_1000_records: number | null; projection_note: string };
+};
+
+export type Lang = "en" | "hi" | "ml";
+export type RuleText = { title: string; message: string; fix: string; needs_review?: boolean };
+export type Translations = {
+  languages: Record<Lang, { label: string; native: string; status: string; note?: string }>;
+  rules: Record<string, Record<Lang, RuleText>>;
 };

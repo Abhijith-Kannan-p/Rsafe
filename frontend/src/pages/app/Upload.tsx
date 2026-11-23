@@ -96,7 +96,7 @@ export function Upload() {
         title="Upload"
         subtitle={`Import ${me.school_code}'s student file. Nothing is saved until you confirm.`}
         actions={
-          <Button variant="ghost" icon={<Sparkles className="h-4 w-4" aria-hidden />} loading={busy === "sample"} onClick={loadSample}>
+          <Button variant="ghost" data-tour="load-sample" icon={<Sparkles className="h-4 w-4" aria-hidden />} loading={busy === "sample"} onClick={loadSample}>
             Load sample messy file
           </Button>
         }

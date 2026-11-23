@@ -1,0 +1,233 @@
+{
+  "_about": "Plain-language rule reasons in English, Hindi and Malayalam. English is copied from the YAML rules (a test keeps them in sync). Hindi and Malayalam are machine translations marked needs_review.",
+  "languages": {
+    "en": {
+      "label": "English",
+      "native": "English",
+      "status": "source"
+    },
+    "hi": {
+      "label": "Hindi",
+      "native": "हिन्दी",
+      "status": "needs_review",
+      "note": "Machine translation. Not yet reviewed by a fluent speaker; check before real use."
+    },
+    "ml": {
+      "label": "Malayalam",
+      "native": "മലയാളം",
+      "status": "needs_review",
+      "note": "Machine translation. Not yet reviewed by a fluent speaker; check before real use."
+    }
+  },
+  "rules": {
+    "FAC-001": {
+      "en": {
+        "title": "Facility status contradicts the maintenance log",
+        "message": "The facility's reported status does not match the latest entry in the school's maintenance log, for example a toilet reported as functional that the log says is broken.",
+        "fix": "Inspect the facility and report its actual condition. If it has been repaired, add a maintenance log entry saying so."
+      },
+      "hi": {
+        "title": "सुविधा की स्थिति रखरखाव लॉग से मेल नहीं खाती",
+        "message": "सुविधा की बताई गई स्थिति स्कूल के रखरखाव लॉग की सबसे नई प्रविष्टि से मेल नहीं खाती, जैसे कोई शौचालय जिसे चालू बताया गया है पर लॉग में खराब लिखा है।",
+        "fix": "सुविधा की जाँच करें और उसकी असली स्थिति दर्ज करें। अगर उसकी मरम्मत हो चुकी है, तो रखरखाव लॉग में इसकी प्रविष्टि जोड़ें।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "സൗകര്യത്തിന്റെ നില പരിപാലന ലോഗുമായി പൊരുത്തപ്പെടുന്നില്ല",
+        "message": "സൗകര്യത്തിന്റെ റിപ്പോർട്ട് ചെയ്ത നില സ്കൂളിന്റെ പരിപാലന ലോഗിലെ ഏറ്റവും പുതിയ രേഖയുമായി പൊരുത്തപ്പെടുന്നില്ല; ഉദാഹരണത്തിന്, പ്രവർത്തനക്ഷമമെന്ന് റിപ്പോർട്ട് ചെയ്ത ഒരു ശൗചാലയം കേടാണെന്ന് ലോഗിൽ പറയുന്നു.",
+        "fix": "സൗകര്യം പരിശോധിച്ച് അതിന്റെ യഥാർത്ഥ നില റിപ്പോർട്ട് ചെയ്യുക. അത് നന്നാക്കിയിട്ടുണ്ടെങ്കിൽ, അക്കാര്യം പരിപാലന ലോഗിൽ ചേർക്കുക.",
+        "needs_review": true
+      }
+    },
+    "STU-001": {
+      "en": {
+        "title": "Student name missing or malformed",
+        "message": "The student's name is missing or contains digits, symbols or extra spaces. Names like this are often rejected when matched against Aadhaar or the previous year's record.",
+        "fix": "Check the name against the admission register or the birth certificate and correct it. Use letters only, with single spaces; dots, apostrophes and hyphens are allowed."
+      },
+      "hi": {
+        "title": "छात्र का नाम नहीं है या गलत ढंग से लिखा है",
+        "message": "छात्र का नाम दर्ज नहीं है, या उसमें अंक, चिह्न या अतिरिक्त खाली जगह है। ऐसे नाम आधार या पिछले साल के रिकॉर्ड से मिलान करते समय अक्सर अस्वीकार हो जाते हैं।",
+        "fix": "नाम को प्रवेश रजिस्टर या जन्म प्रमाणपत्र से मिलाकर ठीक करें। केवल अक्षरों और एक-एक खाली जगह का उपयोग करें; बिंदु, एपॉस्ट्रॉफ़ी और हाइफ़न चल सकते हैं।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "വിദ്യാർത്ഥിയുടെ പേര് ഇല്ല അല്ലെങ്കിൽ തെറ്റായ രൂപത്തിൽ",
+        "message": "വിദ്യാർത്ഥിയുടെ പേര് രേഖപ്പെടുത്തിയിട്ടില്ല, അല്ലെങ്കിൽ അതിൽ അക്കങ്ങളോ ചിഹ്നങ്ങളോ അധിക ഇടങ്ങളോ ഉണ്ട്. ഇത്തരം പേരുകൾ ആധാറുമായോ കഴിഞ്ഞ വർഷത്തെ രേഖയുമായോ ഒത്തുനോക്കുമ്പോൾ പലപ്പോഴും നിരസിക്കപ്പെടുന്നു.",
+        "fix": "പ്രവേശന രജിസ്റ്ററുമായോ ജനന സർട്ടിഫിക്കറ്റുമായോ ഒത്തുനോക്കി പേര് തിരുത്തുക. അക്ഷരങ്ങൾ മാത്രം, ഒറ്റ ഇടങ്ങളോടെ ഉപയോഗിക്കുക; കുത്ത്, അപ്പോസ്ട്രോഫി, ഹൈഫൻ എന്നിവ അനുവദനീയമാണ്.",
+        "needs_review": true
+      }
+    },
+    "STU-002": {
+      "en": {
+        "title": "Date of birth missing, unreadable or outside the age band",
+        "message": "The date of birth is missing, cannot be read as a real date, or gives an age that does not fit the student's class.",
+        "fix": "Enter the date of birth from the birth certificate or the admission register, in DD/MM/YYYY format. If the date is right, check whether the class is wrong."
+      },
+      "hi": {
+        "title": "जन्म तिथि नहीं है, पढ़ी नहीं जा सकती या आयु सीमा से बाहर है",
+        "message": "जन्म तिथि दर्ज नहीं है, सही तारीख के रूप में पढ़ी नहीं जा सकती, या उससे निकलने वाली आयु छात्र की कक्षा से मेल नहीं खाती।",
+        "fix": "जन्म प्रमाणपत्र या प्रवेश रजिस्टर से जन्म तिथि DD/MM/YYYY रूप में दर्ज करें। अगर तारीख सही है, तो देखें कि कहीं कक्षा गलत तो नहीं।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "ജനനത്തീയതി ഇല്ല, വായിക്കാനാകുന്നില്ല, അല്ലെങ്കിൽ പ്രായപരിധിക്ക് പുറത്ത്",
+        "message": "ജനനത്തീയതി രേഖപ്പെടുത്തിയിട്ടില്ല, ശരിയായ തീയതിയായി വായിക്കാനാകുന്നില്ല, അല്ലെങ്കിൽ അതനുസരിച്ചുള്ള പ്രായം വിദ്യാർത്ഥിയുടെ ക്ലാസിന് യോജിക്കുന്നില്ല.",
+        "fix": "ജനന സർട്ടിഫിക്കറ്റിൽ നിന്നോ പ്രവേശന രജിസ്റ്ററിൽ നിന്നോ ജനനത്തീയതി DD/MM/YYYY രൂപത്തിൽ നൽകുക. തീയതി ശരിയാണെങ്കിൽ, ക്ലാസ് തെറ്റാണോ എന്ന് പരിശോധിക്കുക.",
+        "needs_review": true
+      }
+    },
+    "STU-003": {
+      "en": {
+        "title": "Gender missing or different from last year",
+        "message": "The gender field is blank, has an unrecognised value, or does not match the student's record from the previous year.",
+        "fix": "Confirm the gender with the admission register or the student's documents, then correct whichever record is wrong. Rsafe does not change it for you."
+      },
+      "hi": {
+        "title": "लिंग दर्ज नहीं है या पिछले साल से अलग है",
+        "message": "लिंग का खाना खाली है, उसमें अनजाना मान है, या वह छात्र के पिछले साल के रिकॉर्ड से मेल नहीं खाता।",
+        "fix": "प्रवेश रजिस्टर या छात्र के दस्तावेज़ों से लिंग की पुष्टि करें, फिर जो रिकॉर्ड गलत है उसे ठीक करें। Rsafe इसे अपने आप नहीं बदलता।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "ലിംഗം ഇല്ല അല്ലെങ്കിൽ കഴിഞ്ഞ വർഷത്തേതിൽ നിന്ന് വ്യത്യസ്തം",
+        "message": "ലിംഗം എന്ന കോളം ശൂന്യമാണ്, തിരിച്ചറിയാനാകാത്ത മൂല്യമാണ്, അല്ലെങ്കിൽ കഴിഞ്ഞ വർഷത്തെ രേഖയുമായി പൊരുത്തപ്പെടുന്നില്ല.",
+        "fix": "പ്രവേശന രജിസ്റ്ററിലോ വിദ്യാർത്ഥിയുടെ രേഖകളിലോ ലിംഗം ഉറപ്പാക്കി, തെറ്റായ രേഖ തിരുത്തുക. Rsafe ഇത് സ്വയം മാറ്റുന്നില്ല.",
+        "needs_review": true
+      }
+    },
+    "STU-004": {
+      "en": {
+        "title": "Aadhaar missing or update pending",
+        "message": "The student has no Aadhaar number on record, or the number is marked \"update pending\". Records like this are commonly held back at submission.",
+        "fix": "Collect the Aadhaar number from the parent, or help the family complete the pending update at an enrolment centre, then record the new status. Rsafe does not verify Aadhaar with UIDAI."
+      },
+      "hi": {
+        "title": "आधार नहीं है या अपडेट लंबित है",
+        "message": "छात्र का आधार नंबर दर्ज नहीं है, या नंबर पर \"अपडेट लंबित\" लिखा है। ऐसे रिकॉर्ड अक्सर जमा करते समय रोक दिए जाते हैं।",
+        "fix": "माता-पिता से आधार नंबर लें, या परिवार को नामांकन केंद्र पर लंबित अपडेट पूरा करने में मदद करें, फिर नई स्थिति दर्ज करें। Rsafe आधार को UIDAI से सत्यापित नहीं करता।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "ആധാർ ഇല്ല അല്ലെങ്കിൽ പുതുക്കൽ ബാക്കി",
+        "message": "വിദ്യാർത്ഥിയുടെ ആധാർ നമ്പർ രേഖപ്പെടുത്തിയിട്ടില്ല, അല്ലെങ്കിൽ നമ്പർ \"പുതുക്കൽ ബാക്കി\" എന്ന് അടയാളപ്പെടുത്തിയിരിക്കുന്നു. ഇത്തരം രേഖകൾ സമർപ്പിക്കുമ്പോൾ പലപ്പോഴും തടഞ്ഞുവെക്കപ്പെടുന്നു.",
+        "fix": "രക്ഷിതാവിൽ നിന്ന് ആധാർ നമ്പർ വാങ്ങുക, അല്ലെങ്കിൽ എൻറോൾമെന്റ് കേന്ദ്രത്തിൽ ബാക്കിയുള്ള പുതുക്കൽ പൂർത്തിയാക്കാൻ കുടുംബത്തെ സഹായിക്കുക, തുടർന്ന് പുതിയ നില രേഖപ്പെടുത്തുക. Rsafe ആധാർ UIDAI-യുമായി പരിശോധിക്കുന്നില്ല.",
+        "needs_review": true
+      }
+    },
+    "STU-005": {
+      "en": {
+        "title": "Name spelled differently from the admission register",
+        "message": "The name in this record is not spelled the same way as in the school's admission register. Spelling differences are a common reason records fail to match. Rsafe only flags this; it never changes a name by itself.",
+        "fix": "Check the birth certificate or Aadhaar card and use the same spelling in both places. The register spelling is offered as a suggestion that you must approve."
+      },
+      "hi": {
+        "title": "नाम की वर्तनी प्रवेश रजिस्टर से अलग है",
+        "message": "इस रिकॉर्ड में नाम की वर्तनी स्कूल के प्रवेश रजिस्टर जैसी नहीं है। वर्तनी का अंतर रिकॉर्ड मेल न खाने का आम कारण है। Rsafe केवल इसकी सूचना देता है; वह कभी अपने आप नाम नहीं बदलता।",
+        "fix": "जन्म प्रमाणपत्र या आधार कार्ड देखें और दोनों जगह एक ही वर्तनी लिखें। रजिस्टर वाली वर्तनी सुझाव के रूप में दी गई है, जिसे आपको मंज़ूर करना होगा।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "പേരിന്റെ അക്ഷരവിന്യാസം പ്രവേശന രജിസ്റ്ററിൽ നിന്ന് വ്യത്യസ്തം",
+        "message": "ഈ രേഖയിലെ പേര് സ്കൂളിന്റെ പ്രവേശന രജിസ്റ്ററിലെ അതേ രീതിയിലല്ല എഴുതിയിരിക്കുന്നത്. അക്ഷരവിന്യാസത്തിലെ വ്യത്യാസം രേഖകൾ പൊരുത്തപ്പെടാതിരിക്കാനുള്ള സാധാരണ കാരണമാണ്. Rsafe ഇത് ചൂണ്ടിക്കാണിക്കുക മാത്രം ചെയ്യുന്നു; ഒരിക്കലും സ്വയം പേര് മാറ്റുന്നില്ല.",
+        "fix": "ജനന സർട്ടിഫിക്കറ്റോ ആധാർ കാർഡോ നോക്കി രണ്ടിടത്തും ഒരേ അക്ഷരവിന്യാസം ഉപയോഗിക്കുക. രജിസ്റ്ററിലെ എഴുത്ത് ഒരു നിർദ്ദേശമായി നൽകിയിരിക്കുന്നു; നിങ്ങൾ അത് അംഗീകരിക്കണം.",
+        "needs_review": true
+      }
+    },
+    "STU-006": {
+      "en": {
+        "title": "Same student entered twice in one school",
+        "message": "The same student appears more than once in this school's records. Duplicate entries inflate enrolment and can block the submission.",
+        "fix": "Keep the entry that matches the admission register and remove or merge the other one. If they really are two children, correct the Aadhaar number on the wrong record."
+      },
+      "hi": {
+        "title": "एक ही छात्र एक स्कूल में दो बार दर्ज है",
+        "message": "एक ही छात्र इस स्कूल के रिकॉर्ड में एक से अधिक बार दिखता है। दोहरी प्रविष्टियाँ नामांकन संख्या बढ़ा देती हैं और जमा करने में रुकावट बन सकती हैं।",
+        "fix": "जो प्रविष्टि प्रवेश रजिस्टर से मेल खाती है उसे रखें और दूसरी को हटाएँ या मिला दें। अगर ये सच में दो अलग बच्चे हैं, तो गलत रिकॉर्ड का आधार नंबर ठीक करें।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "ഒരേ വിദ്യാർത്ഥി ഒരു സ്കൂളിൽ രണ്ടുതവണ",
+        "message": "ഒരേ വിദ്യാർത്ഥി ഈ സ്കൂളിന്റെ രേഖകളിൽ ഒന്നിലധികം തവണ കാണുന്നു. ഇരട്ട രേഖകൾ പ്രവേശന എണ്ണം കൂട്ടുകയും സമർപ്പണം തടയുകയും ചെയ്യാം.",
+        "fix": "പ്രവേശന രജിസ്റ്ററുമായി പൊരുത്തപ്പെടുന്ന രേഖ നിലനിർത്തി മറ്റേത് നീക്കം ചെയ്യുകയോ ലയിപ്പിക്കുകയോ ചെയ്യുക. ഇവർ ശരിക്കും രണ്ട് കുട്ടികളാണെങ്കിൽ, തെറ്റായ രേഖയിലെ ആധാർ നമ്പർ തിരുത്തുക.",
+        "needs_review": true
+      }
+    },
+    "STU-007": {
+      "en": {
+        "title": "Same student enrolled in two schools",
+        "message": "A student with the same Aadhaar number is enrolled at another school. The match uses a keyed token, not the raw number and not the name, so it works even when the name is written differently.",
+        "fix": "Contact the other school through the cluster coordinator to find out where the student actually studies. The school the student has left should mark them as transferred out."
+      },
+      "hi": {
+        "title": "एक ही छात्र दो स्कूलों में नामांकित है",
+        "message": "इसी आधार नंबर वाला एक छात्र किसी दूसरे स्कूल में भी नामांकित है। मिलान एक कुंजी वाले टोकन से होता है, असली नंबर या नाम से नहीं, इसलिए नाम अलग ढंग से लिखा हो तब भी यह काम करता है।",
+        "fix": "क्लस्टर समन्वयक के माध्यम से दूसरे स्कूल से संपर्क करें और पता करें कि छात्र असल में कहाँ पढ़ता है। जिस स्कूल को छात्र छोड़ चुका है, वह उसे \"transferred out\" दर्ज करे।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "ഒരേ വിദ്യാർത്ഥി രണ്ട് സ്കൂളുകളിൽ",
+        "message": "ഇതേ ആധാർ നമ്പറുള്ള ഒരു വിദ്യാർത്ഥി മറ്റൊരു സ്കൂളിലും പ്രവേശനം നേടിയിട്ടുണ്ട്. പൊരുത്തം കണ്ടെത്തുന്നത് ഒരു കീ ഉപയോഗിച്ചുള്ള ടോക്കൺ വഴിയാണ്, യഥാർത്ഥ നമ്പറോ പേരോ ഉപയോഗിച്ചല്ല; അതിനാൽ പേര് വ്യത്യസ്തമായി എഴുതിയാലും ഇത് പ്രവർത്തിക്കും.",
+        "fix": "ക്ലസ്റ്റർ കോർഡിനേറ്റർ വഴി മറ്റേ സ്കൂളുമായി ബന്ധപ്പെട്ട് വിദ്യാർത്ഥി യഥാർത്ഥത്തിൽ എവിടെയാണ് പഠിക്കുന്നതെന്ന് കണ്ടെത്തുക. വിദ്യാർത്ഥി വിട്ടുപോയ സ്കൂൾ അവരെ \"transferred out\" ആയി രേഖപ്പെടുത്തണം.",
+        "needs_review": true
+      }
+    },
+    "STU-008": {
+      "en": {
+        "title": "Dropout flag contradicted by recent activity",
+        "message": "This student is marked as a dropout, but attendance or fee records show recent activity. Marking a child who still attends as a dropout can cut them off from benefits, so the flag is held and not applied until a person reviews it.",
+        "fix": "Speak to the class teacher and the family. If the student still attends, set the status back to active. If they have really left, record the reason and the last day attended, then release the hold."
+      },
+      "hi": {
+        "title": "हाल की गतिविधि के बावजूद ड्रॉपआउट दर्ज है",
+        "message": "इस छात्र को ड्रॉपआउट दर्ज किया गया है, पर उपस्थिति या फ़ीस के रिकॉर्ड में हाल की गतिविधि दिखती है। जो बच्चा अब भी आता है उसे ड्रॉपआउट दर्ज करने से वह लाभों से वंचित हो सकता है, इसलिए यह फ़्लैग रोका गया है और किसी व्यक्ति की जाँच तक लागू नहीं होगा।",
+        "fix": "कक्षा शिक्षक और परिवार से बात करें। अगर छात्र अब भी आता है, तो स्थिति वापस \"active\" करें। अगर वह सच में छोड़ चुका है, तो कारण और आखिरी उपस्थिति का दिन दर्ज करें, फिर रोक हटाएँ।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "സമീപകാല പ്രവർത്തനം ഉണ്ടായിട്ടും കൊഴിഞ്ഞുപോക്ക് എന്ന് രേഖപ്പെടുത്തി",
+        "message": "ഈ വിദ്യാർത്ഥിയെ കൊഴിഞ്ഞുപോയതായി രേഖപ്പെടുത്തിയിട്ടുണ്ട്, എന്നാൽ ഹാജർ അല്ലെങ്കിൽ ഫീസ് രേഖകളിൽ സമീപകാല പ്രവർത്തനം കാണുന്നു. ഇപ്പോഴും സ്കൂളിൽ വരുന്ന കുട്ടിയെ കൊഴിഞ്ഞുപോയതായി രേഖപ്പെടുത്തുന്നത് ആനുകൂല്യങ്ങൾ നഷ്ടപ്പെടുത്താം; അതിനാൽ ഒരാൾ പരിശോധിക്കുന്നതുവരെ ഈ അടയാളം തടഞ്ഞുവെച്ചിരിക്കുന്നു, പ്രയോഗിക്കുന്നില്ല.",
+        "fix": "ക്ലാസ് അധ്യാപകനോടും കുടുംബത്തോടും സംസാരിക്കുക. വിദ്യാർത്ഥി ഇപ്പോഴും വരുന്നുണ്ടെങ്കിൽ നില വീണ്ടും \"active\" ആക്കുക. ശരിക്കും വിട്ടുപോയെങ്കിൽ, കാരണവും അവസാനം ഹാജരായ ദിവസവും രേഖപ്പെടുത്തി തടഞ്ഞുവെക്കൽ നീക്കുക.",
+        "needs_review": true
+      }
+    },
+    "SYS-001": {
+      "en": {
+        "title": "Transfer status missing after a school closure or merger",
+        "message": "This student came from a school that has been closed or merged, but the transfer has not been recorded. Students like this can disappear from both schools' counts.",
+        "fix": "Record the transfer status (for example \"transferred in\") using the closure or merger order, so the student is counted at the new school."
+      },
+      "hi": {
+        "title": "स्कूल बंद होने या विलय के बाद स्थानांतरण स्थिति नहीं है",
+        "message": "यह छात्र ऐसे स्कूल से आया है जो बंद हो गया है या जिसका विलय हो गया है, पर स्थानांतरण दर्ज नहीं हुआ। ऐसे छात्र दोनों स्कूलों की गिनती से गायब हो सकते हैं।",
+        "fix": "बंद होने या विलय के आदेश के आधार पर स्थानांतरण स्थिति (जैसे \"transferred in\") दर्ज करें, ताकि छात्र नए स्कूल में गिना जाए।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "സ്കൂൾ അടച്ചതിനോ ലയിച്ചതിനോ ശേഷം മാറ്റത്തിന്റെ നില ഇല്ല",
+        "message": "ഈ വിദ്യാർത്ഥി അടച്ചതോ ലയിപ്പിച്ചതോ ആയ ഒരു സ്കൂളിൽ നിന്നാണ് വന്നത്, എന്നാൽ മാറ്റം രേഖപ്പെടുത്തിയിട്ടില്ല. ഇത്തരം വിദ്യാർത്ഥികൾ രണ്ട് സ്കൂളുകളുടെയും എണ്ണത്തിൽ നിന്ന് അപ്രത്യക്ഷരാകാം.",
+        "fix": "അടച്ചുപൂട്ടൽ അല്ലെങ്കിൽ ലയന ഉത്തരവ് അനുസരിച്ച് മാറ്റത്തിന്റെ നില (ഉദാഹരണത്തിന് \"transferred in\") രേഖപ്പെടുത്തുക, അതുവഴി വിദ്യാർത്ഥിയെ പുതിയ സ്കൂളിൽ എണ്ണും.",
+        "needs_review": true
+      }
+    },
+    "TCH-001": {
+      "en": {
+        "title": "Teacher assigned outside their subject",
+        "message": "A teacher is assigned to teach a subject that is not among the subjects they are qualified in.",
+        "fix": "Either update the teacher's qualified subjects if the record is out of date, or correct the class assignment."
+      },
+      "hi": {
+        "title": "शिक्षक को उनकी योग्यता से बाहर का विषय दिया गया है",
+        "message": "एक शिक्षक को ऐसा विषय पढ़ाने को दिया गया है जो उनके योग्यता वाले विषयों में नहीं है।",
+        "fix": "अगर रिकॉर्ड पुराना है तो शिक्षक के योग्यता वाले विषय अपडेट करें, नहीं तो कक्षा का आवंटन ठीक करें।",
+        "needs_review": true
+      },
+      "ml": {
+        "title": "അധ്യാപകന് യോഗ്യതയില്ലാത്ത വിഷയം നൽകിയിരിക്കുന്നു",
+        "message": "ഒരു അധ്യാപകന് അവരുടെ യോഗ്യതയുള്ള വിഷയങ്ങളിൽ ഇല്ലാത്ത ഒരു വിഷയം പഠിപ്പിക്കാൻ നൽകിയിരിക്കുന്നു.",
+        "fix": "രേഖ പഴയതാണെങ്കിൽ അധ്യാപകന്റെ യോഗ്യതാ വിഷയങ്ങൾ പുതുക്കുക, അല്ലെങ്കിൽ ക്ലാസ് ചുമതല തിരുത്തുക.",
+        "needs_review": true
+      }
+    }
+  }
+}

@@ -12,6 +12,8 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { Background, ToastProvider } from "./components";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { TourProvider } from "./components/Tour";
+import { LangProvider } from "./lib/i18n";
 import { SessionProvider } from "./lib/session";
 
 createRoot(document.getElementById("root")!).render(
@@ -22,9 +24,13 @@ createRoot(document.getElementById("root")!).render(
         <ToastProvider>
           <SessionProvider>
             <Background />
-            <ErrorBoundary>
-              <App />
-            </ErrorBoundary>
+            <LangProvider>
+              <TourProvider>
+                <ErrorBoundary>
+                  <App />
+                </ErrorBoundary>
+              </TourProvider>
+            </LangProvider>
           </SessionProvider>
         </ToastProvider>
       </BrowserRouter>

@@ -4,6 +4,7 @@ import { Button, GlassCard, useToast } from "../../components";
 import { ErrorNote, formatTime, Loading, PageHeader } from "../../components/ui";
 import { post, type Confirmation, type MyRecord as Rec } from "../../lib/api";
 import { cn } from "../../lib/cn";
+import { htmlLang, LanguageSelect, MachineNote, useLang } from "../../lib/i18n";
 import { useApi } from "../../lib/useApi";
 
 type Step = "ask" | "otp" | "done";
@@ -138,6 +139,7 @@ function ConfirmFlow({ onDone }: { onDone: (c: Confirmation) => void }) {
 
 export function MyRecord() {
   const data = useApi<Rec>("/my/record");
+  const { rule } = useLang();
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   if (data.loading && !data.data) return <Loading label="Loading the record" />;
   if (data.error) return <ErrorNote error={data.error} onRetry={data.reload} />;
@@ -191,18 +193,21 @@ export function MyRecord() {
           <ul className="grid gap-3">
             {d.issues.map((i) => {
               const done = !(i.status === "open" || i.status === "held");
+              const t = rule(i.rule_id, { title: i.title, message: i.message, fix: i.fix });
               return (
                 <li key={i.id} className={cn("rounded-2xl p-3", done ? "bg-aqua/[0.07]" : "bg-white/[0.05]")}>
                   <p className="flex items-center gap-2 text-sm font-semibold text-cream">
                     {done ? <CheckCircle2 className="h-4 w-4 text-aqua" aria-hidden /> : <Clock3 className="h-4 w-4 text-saffron" aria-hidden />}
-                    {i.title}
+                    <span lang={htmlLang(t.lang)}>{t.title}</span>
                     <span className="ml-auto text-xs font-normal text-mist">{done ? "Sorted" : i.status === "held" ? "Under review" : "Being checked"}</span>
                   </p>
-                  <p className="mt-1 text-sm text-mist">{i.message}</p>
+                  <p className="mt-1 text-sm text-mist" lang={htmlLang(t.lang)}>{t.message}</p>
                 </li>
               );
             })}
           </ul>
+          {d.issues.length > 0 && <MachineNote className="mt-3" />}
+          <div className="mt-3"><LanguageSelect /></div>
         </GlassCard>
       </div>
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -13,6 +14,7 @@ from ..auth import Identity, current_identity, require
 from ..db import get_session
 from ..roles import Role
 from ..services import actions, scope
+from ..services.checks import REGISTRY
 from ..services.validation import run_validation, school_summary
 
 router = APIRouter(prefix="/api", tags=["issues"])
@@ -79,8 +81,32 @@ def get_issue(issue_id: int, request: Request, who: Identity = Depends(current_i
     return issue_out(issue) | {
         "record": actions.record_snapshot(s, issue),
         "editable_fields": editable,
-        "rule": {"id": rule.id, "version": rule.version, "title": rule.title, "addresses": rule.addresses} if rule else None,
+        "rule": _rule_explain(rule) if rule else None,
+        "history": _history(s, issue.id),
     }
+
+
+def _rule_explain(rule) -> dict[str, Any]:
+    """Everything needed to answer "why was this flagged?": the rule as loaded, and the data its check reads."""
+    check = REGISTRY.get(rule.check)
+    return {
+        "id": rule.id, "version": rule.version, "title": rule.title, "addresses": rule.addresses,
+        "severity": rule.severity, "check": rule.check, "scope": rule.scope, "hold": rule.hold,
+        "params": rule.params, "uses": list(check.uses) if check else [],
+    }
+
+
+def _history(s: Session, issue_id: int | None) -> list[dict[str, Any]]:
+    """Audit rows for this issue, oldest first (the issue id lives inside the hashed payload)."""
+    out = []
+    rows = s.exec(select(m.AuditEntry).where(m.AuditEntry.action.startswith("issue.")).order_by(m.AuditEntry.id))  # type: ignore[attr-defined]
+    for e in rows:
+        p = json.loads(e.payload or "{}")
+        if p.get("issue_id") == issue_id:
+            out.append({"id": e.id, "ts": e.ts, "actor": e.actor, "action": e.action.split(".", 1)[1],
+                        "field": p.get("field"), "old": p.get("old"), "new": p.get("new"),
+                        "rejected_value": p.get("rejected_value"), "note": p.get("note") or ""})
+    return out
 
 
 class NoteBody(BaseModel):
@@ -111,6 +137,13 @@ def edit(issue_id: int, body: EditBody, request: Request,
          who: Identity = Depends(require(*ACTORS)), s: Session = Depends(get_session)) -> dict:
     issue = _get_visible(s, who, issue_id)
     return _act_and_revalidate(s, request, who, issue, actions.edit(s, issue, who, body.field, body.value, body.note))
+
+
+@router.post("/issues/{issue_id}/reject-suggestion")
+def reject_suggestion(issue_id: int, body: NoteBody, request: Request,
+                      who: Identity = Depends(require(*ACTORS)), s: Session = Depends(get_session)) -> dict:
+    issue = _get_visible(s, who, issue_id)
+    return _act_and_revalidate(s, request, who, issue, actions.reject_suggestion(s, issue, who, body.note))
 
 
 @router.post("/issues/{issue_id}/hold")

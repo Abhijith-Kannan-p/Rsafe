@@ -35,7 +35,7 @@ export const SHOWCASE = [
     path: "/app/dashboard?issue=…",
     title: "Every flag explains itself",
     caption:
-      "Open a high-severity issue to see the rule that fired, the evidence it used, the record's own values with the problem field highlighted, and a suggested fix to approve, edit or hold.",
+      "Open a high-severity issue to see the rule that fired, the evidence it used, the record's own values with the problem field highlighted, and a suggested fix with the reason for it, to approve, reject, edit or hold.",
   },
   {
     file: "04-held.png",

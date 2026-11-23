@@ -5,6 +5,8 @@ import type { Role } from "./lib/api";
 import { HOME, useSession } from "./lib/session";
 import { Audit } from "./pages/app/Audit";
 import { Classes } from "./pages/app/Classes";
+import { Coverage } from "./pages/app/Coverage";
+import { System } from "./pages/app/System";
 import { Cluster, ClusterSchool } from "./pages/app/Cluster";
 import { Dashboard } from "./pages/app/Dashboard";
 import { Duplicates } from "./pages/app/Duplicates";
@@ -47,6 +49,8 @@ export function App() {
         <Route path="classes" element={<Only roles={["teacher"]}><Classes /></Only>} />
         <Route path="my-record" element={<Only roles={["student_parent"]}><MyRecord /></Only>} />
         <Route path="audit" element={<Only roles={["admin"]}><Audit /></Only>} />
+        <Route path="coverage" element={<Only roles={["principal", "mis_coordinator", "admin"]}><Coverage /></Only>} />
+        <Route path="system" element={<Only roles={["admin"]}><System /></Only>} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

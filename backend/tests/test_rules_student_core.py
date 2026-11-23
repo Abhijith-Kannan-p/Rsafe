@@ -169,3 +169,62 @@ def test_stu004_bad(last4, status, problem):
 def test_stu004_evidence_is_masked():
     [issue] = run("STU-004", student(aadhaar_status="update_pending"))
     assert issue.evidence["aadhaar"] == "XXXX XXXX 4821"
+
+
+# -------------------------------------------------- smart suggestions from the admission register
+
+def _with_register(name="Rahul Sharma", dob="14/03/2016"):
+    return Context.build(
+        admission_register=[{"school_code": "SYN-0001", "admission_no": "01ADM0001", "name": name, "dob": dob}],
+        academic_year_start=2026, today=date(2026, 11, 16),
+    )
+
+
+def _run_ctx(rule_id, rec, ctx):
+    return run_rules([RULES[rule_id]], {"student": [rec]}, ctx)
+
+
+def test_stu001_digit_name_suggests_register_name_with_reason():
+    [issue] = _run_ctx("STU-001", student(name="R4hul Sharma"), _with_register())
+    assert issue.suggested_value == "Rahul Sharma"
+    assert issue.confidence.startswith("High") and "admission register" in issue.confidence
+    assert issue.evidence["register_name"] == "Rahul Sharma"
+
+
+def test_stu001_missing_name_suggests_register_name():
+    [issue] = _run_ctx("STU-001", student(name=""), _with_register())
+    assert issue.suggested_value == "Rahul Sharma" and "admission no 01ADM0001" in issue.confidence
+
+
+def test_stu001_bad_register_name_is_not_suggested():
+    [issue] = _run_ctx("STU-001", student(name="R4hul Sharma"), _with_register(name="R4hul Sharma"))
+    assert issue.suggested_value is None  # never propose a value that would itself be flagged
+
+
+@pytest.mark.parametrize("dob", ["", "31/02/2016", "garbage"])
+def test_stu002_suggests_register_date(dob):
+    [issue] = _run_ctx("STU-002", student(dob=dob), _with_register(dob="14/03/2016"))
+    assert issue.suggested_value == "14/03/2016"
+    assert issue.confidence.startswith("High") and issue.evidence["register_dob"] == "14/03/2016"
+
+
+def test_stu002_age_band_suggests_register_date_only_if_it_fits():
+    [fits] = _run_ctx("STU-002", student(dob="14/06/2023", class_grade=5), _with_register(dob="14/03/2016"))
+    assert fits.suggested_value == "14/03/2016" and fits.confidence.startswith("Medium")
+    [no_fit] = _run_ctx("STU-002", student(dob="14/06/2023", class_grade=5), _with_register(dob="14/03/2022"))
+    assert no_fit.suggested_value is None
+
+
+def test_stu002_swapped_month_and_day_is_suggested_with_medium_confidence():
+    [issue] = run("STU-002", student(dob="2016-14-03", class_grade=5))
+    assert issue.suggested_value == "14/03/2016" and issue.confidence.startswith("Medium")
+
+
+def test_stu002_swap_that_does_not_fit_the_class_is_not_suggested():
+    [issue] = run("STU-002", student(dob="2023-14-03", class_grade=5))
+    assert issue.suggested_value is None
+
+
+def test_stu002_impossible_date_without_register_is_not_guessed():
+    [issue] = run("STU-002", student(dob="31/02/2016"))
+    assert issue.suggested_value is None

@@ -14,6 +14,8 @@ from .db import engine, init_db
 from .models import SQLModel
 from .roles import ROLE_LABELS
 from .routes import audit as audit_routes
+from .routes import demo as demo_routes
+from .routes import insights as insight_routes
 from .routes import export as export_routes
 from .routes import issues as issue_routes
 from .routes import rules as rules_routes
@@ -64,6 +66,8 @@ app.include_router(rules_routes.router)
 app.include_router(upload_routes.router)
 app.include_router(export_routes.router)
 app.include_router(view_routes.router)
+app.include_router(demo_routes.router)
+app.include_router(insight_routes.router)
 
 
 @app.get("/api/health")

@@ -152,3 +152,42 @@ def test_notes_with_id_numbers_are_refused(client, seeded_db, db):
         assert r.status_code == 422 and "ID number" in r.json()["detail"], (action, r.text)
     assert last_audit(db).id == audit_before
     assert student(db, issue["entity_ref"]).dob == "31/02/2015"
+
+
+def test_reject_suggestion_keeps_record_and_issue_open(client, seeded_db, db):
+    login(client, "principal", "SYN-0002")
+    issue = next(i for i in issues_by(client, rule_id="STU-005") if "Ananya" in i["detail"])
+    r = client.post(f"/api/issues/{issue['id']}/reject-suggestion", json={"note": "register is wrong here"})
+    assert r.status_code == 200, r.text
+    assert r.json()["issue"]["status"] == "open" and r.json()["issue"]["suggested_value"] is None
+    assert student(db, issue["entity_ref"]).name == "Ananya Kumar"  # untouched
+    action = db.get(AuditEntry, r.json()["audit_id"])
+    assert action.action == "issue.reject_suggestion" and '"rejected_value":"Ananya R. Kumar"' in action.payload
+    # a re-run does not bring the rejected suggestion back
+    client.post("/api/validate", json={})
+    detail = client.get(f"/api/issues/{issue['id']}").json()
+    assert detail["suggested_value"] is None and detail["status"] == "open"
+    assert [h["action"] for h in detail["history"]] == ["reject_suggestion"]
+    assert detail["history"][0]["rejected_value"] == "Ananya R. Kumar"
+    # approving now confirms the record as it is
+    r = client.post(f"/api/issues/{issue['id']}/approve", json={})
+    assert db.get(AuditEntry, r.json()["audit_id"]).action == "issue.confirm"
+    assert student(db, issue["entity_ref"]).name == "Ananya Kumar"
+
+
+def test_reject_suggestion_needs_a_suggestion_and_a_staff_role(client, seeded_db):
+    login(client, "principal", "SYN-0002")
+    no_sugg = next(i for i in issues_by(client, status="open") if i["suggested_value"] is None)
+    assert client.post(f"/api/issues/{no_sugg['id']}/reject-suggestion", json={}).status_code == 409
+    sugg = next(i for i in issues_by(client, status="open") if i["suggested_value"])
+    login(client, "mis_coordinator")
+    assert client.post(f"/api/issues/{sugg['id']}/reject-suggestion", json={}).status_code == 403
+
+
+def test_issue_detail_explains_the_rule(client, seeded_db):
+    login(client, "principal", "SYN-0002")
+    issue = next(i for i in issues_by(client, rule_id="STU-002") if "31/02/2015" in i["detail"])
+    d = client.get(f"/api/issues/{issue['id']}").json()
+    assert d["rule"]["check"] == "dob_valid" and d["rule"]["version"] == "1.0.0"
+    assert any("admission register" in u for u in d["rule"]["uses"])
+    assert d["rule"]["params"] and d["history"] == []

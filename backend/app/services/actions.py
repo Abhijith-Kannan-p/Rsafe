@@ -178,3 +178,23 @@ def hold(s: Session, issue: m.Issue, who: Identity, note: str = "") -> m.AuditEn
     check_permission(who, issue, "hold")
     _check_note(note)
     return _finish(s, issue, who, "held", "issue.hold", None, None, None, note)
+
+
+def reject_suggestion(s: Session, issue: m.Issue, who: Identity, note: str = "") -> m.AuditEntry:
+    """The person says the proposed value is wrong. The record is not touched and the issue stays
+    open (or held): they still have to edit the value or confirm the record as it is."""
+    check_permission(who, issue, "edit")
+    _check_note(note)
+    if issue.suggested_value is None or not issue.suggested_field:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This issue has no suggestion to reject.")
+    field, rejected = issue.suggested_field, issue.suggested_value
+    issue.suggested_value = None
+    issue.suggested_field = None
+    issue.note = note
+    issue.updated_at = datetime.now(timezone.utc)
+    s.add(issue)
+    return audit.append(s, who.actor, who.role.value, "issue.reject_suggestion", f"{issue.entity}:{issue.entity_ref}", {
+        "issue_id": issue.id, "rule_id": issue.rule_id, "rule_version": issue.rule_version,
+        "school_code": issue.school_code, "field": field, "old": None, "new": None,
+        "rejected_value": rejected, "status": issue.status, "note": note,
+    }, commit=False)

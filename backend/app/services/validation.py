@@ -9,6 +9,7 @@ that), but only the requested schools' issues are written.
 from __future__ import annotations
 
 import hashlib
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
@@ -112,19 +113,28 @@ def school_summary(s: Session, code: str, only_students: set[str] | None = None)
 
 def run_validation(s: Session, rules: list[RuleSpec], schools: list[str],
                    actor: str, role: str) -> dict[str, Any]:
+    t0 = time.perf_counter()
     data, ctx = dataset_from_db(s)
+    t1 = time.perf_counter()
     results = run_rules(rules, data, ctx)
+    t2 = time.perf_counter()
     by_school: dict[str, list[IssueResult]] = {}
     for r in results:
         by_school.setdefault(r.school_code, []).append(r)
     changes = {code: _sync_school(s, code, by_school.get(code, [])) for code in schools}
     s.flush()
+    t3 = time.perf_counter()
+    records = sum(len(v) for v in data.values())
+    timing = {"read_ms": round((t1 - t0) * 1000, 1), "rules_ms": round((t2 - t1) * 1000, 1),
+              "store_ms": round((t3 - t2) * 1000, 1), "total_ms": round((t3 - t0) * 1000, 1),
+              "records": records}
     summaries = [school_summary(s, code) for code in schools]
     audit.append(s, actor, role, "validation.run", ",".join(schools), {
         "schools": schools,
         "rules": {r.id: r.version for r in rules},
         "changes": changes,
         "readiness": {x["school_code"]: x["readiness"] for x in summaries},
+        "timing": timing,
     }, commit=False)
     s.commit()
-    return {"schools": summaries, "changes": changes}
+    return {"schools": summaries, "changes": changes, "timing": timing}

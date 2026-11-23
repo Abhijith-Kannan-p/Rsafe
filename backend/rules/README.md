@@ -21,3 +21,10 @@ fix: >
 ```
 
 To change a rule's behaviour, change its `params` or its check and bump `version`.
+
+## Translations
+
+`i18n.json` holds each rule's title, reason and fix in English, Hindi and Malayalam. The English copy
+must match the YAML exactly (`tests/test_extras.py` checks this), so when you change a rule's
+`message`, `fix` or `title`, update `i18n.json` too. Hindi and Malayalam are machine translations
+marked `needs_review`; the app labels them as such wherever they are shown.
