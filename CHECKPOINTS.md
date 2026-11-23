@@ -702,3 +702,15 @@ My checks:
   per-student record page).
 - Lighthouse can't open the tour card or the palette by itself, so those two overlays were checked by
   keyboard and role queries in the walkthrough, not scored.
+
+## Release check: fresh clone (23 Nov 2026)
+
+I copied exactly the files git would commit (`git ls-files -co --exclude-standard`, 8.1 MB: no keys,
+database, virtualenv or node_modules) into an empty folder and ran it as a judge would:
+- `npm run setup`: completed in 73 s, with the same readiness numbers (90%, 87%, 86%).
+- The regenerated `backend/data/` and `frontend/public/samples/` are byte-identical to the committed copies.
+- `npm run test`: 246 passed. `npm run build`: passes.
+- `npm run dev`, then the landing page shows all 7 screenshots with their WebP versions and no placeholders.
+- The guided tour ran start to finish: all 10 steps opened the right role and screen, with no console errors.
+
+No code changed in this check.
