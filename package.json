@@ -12,5 +12,10 @@
     "bench": "node scripts/task.mjs bench",
     "build": "npm --prefix frontend run build",
     "typecheck": "npm --prefix frontend run typecheck"
+  },
+  "homepage": "https://rsafe.onrender.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Abhijith-Kannan-p/Rsafe"
   }
 }

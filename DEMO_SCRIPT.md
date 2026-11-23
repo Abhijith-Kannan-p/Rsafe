@@ -11,6 +11,9 @@ npm run dev     # leave running
 ```
 
 - Open http://127.0.0.1:5173 in a browser window about 1440 px wide, zoom 100%.
+- **Or present from the live site, [rsafe.onrender.com](https://rsafe.onrender.com).** Open it 5 minutes
+  early: the free instance sleeps when idle and takes up to a minute to wake. It wakes with fresh data,
+  so the numbers below match.
 - Close other tabs. Keep this script on a second screen.
 - If something goes wrong mid-demo, reset: as Admin, **System → Reset demo data** (or `npm run seed`), then
   reload. That takes about 3 seconds.

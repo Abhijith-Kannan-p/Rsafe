@@ -2,6 +2,9 @@
 
 **Every record, right before it counts.**
 
+**Live demo: [rsafe.onrender.com](https://rsafe.onrender.com)**. Pick any role; nothing to install. It
+runs on a free instance that sleeps when idle, so the first visit can take up to a minute to load.
+
 Rsafe checks a school's student, teacher and facility records before they are submitted to UDISE+. It runs
 versioned rules, explains each problem in plain language, suggests a fix, holds risky flags for a person
 to decide, finds the same child enrolled in two schools without sharing raw IDs, keeps a tamper-evident
