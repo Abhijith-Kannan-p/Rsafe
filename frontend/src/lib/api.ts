@@ -5,12 +5,26 @@ export class ApiError extends Error {
   }
 }
 
+export const OFFLINE_MESSAGE = "Can't reach the Rsafe server. Is npm run dev still running?";
+/** Fired when the server says the session is gone, so the app can send the user back to /enter. */
+export const SESSION_LOST = "rsafe:session-lost";
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    credentials: "include",
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      credentials: "include",
+      ...init,
+      headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    });
+  } catch {
+    throw new ApiError(0, OFFLINE_MESSAGE);
+  }
+  // the Vite proxy answers 502/503/504 (or 500 with no JSON body) when the API process is down
+  if ([502, 503, 504].includes(res.status) || (res.status === 500 && !res.headers.get("content-type")?.includes("json"))) {
+    throw new ApiError(res.status, OFFLINE_MESSAGE);
+  }
+  if (res.status === 401 && !path.startsWith("/session")) window.dispatchEvent(new Event(SESSION_LOST));
   if (!res.ok) {
     let detail = res.statusText;
     try {

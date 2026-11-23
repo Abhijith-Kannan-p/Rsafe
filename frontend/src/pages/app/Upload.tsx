@@ -122,7 +122,7 @@ export function Upload() {
           One row per student. Full Aadhaar numbers are turned into keyed tokens on arrival and never shown or stored; you
           will only see the last four digits.
         </p>
-        <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" id="csv-input" onChange={(e) => onFiles(e.target.files)} />
+        <input ref={input} type="file" accept=".csv,text/csv" className="sr-only" id="csv-input" aria-label="Choose a CSV file" tabIndex={-1} onChange={(e) => onFiles(e.target.files)} />
         <Button variant="ghost" size="sm" icon={<FileSpreadsheet className="h-4 w-4" aria-hidden />} loading={busy === "preview"} onClick={() => input.current?.click()}>
           Choose file
         </Button>

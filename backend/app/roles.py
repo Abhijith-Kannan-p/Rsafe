@@ -1,4 +1,4 @@
-"""Demo roles. Enforcement on routes arrives in Phase 4."""
+"""Demo roles. Every route checks them server-side (see app/auth.py)."""
 
 from enum import Enum
 

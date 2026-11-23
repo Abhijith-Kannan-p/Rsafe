@@ -73,6 +73,9 @@ export function Classes() {
         </GlassCard>
       )}
 
+      {d.classes.length === 0 && (
+        <GlassCard className="text-mist">No classes are assigned to you in this school's timetable, so there are no students to show.</GlassCard>
+      )}
       <div className="grid gap-4 xl:grid-cols-2">
         {d.classes.map((c) => (
           <GlassCard key={`${c.class_grade}${c.section}`} padding="none" aria-labelledby={`class-${c.class_grade}${c.section}`}>

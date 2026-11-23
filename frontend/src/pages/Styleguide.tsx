@@ -229,11 +229,11 @@ export function Styleguide() {
 
       <Section title="Role cards">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <RoleCard icon={School} title="Principal" description="Review issues, approve or hold, export." onEnter={() => toast({ kind: "info", title: "Roles arrive in Phase 6" })} />
-          <RoleCard icon={GraduationCap} accent="aqua" title="Teacher" description="See and fix records for your own classes." onEnter={() => toast({ kind: "info", title: "Roles arrive in Phase 6" })} />
-          <RoleCard icon={LayoutGrid} accent="violet" title="MIS Coordinator" description="Cluster view across schools." onEnter={() => toast({ kind: "info", title: "Roles arrive in Phase 6" })} />
-          <RoleCard icon={BookUser} accent="aqua" title="Student and Parent" description="See your record status, confirm details (consent mockup)." onEnter={() => toast({ kind: "info", title: "Roles arrive in Phase 6" })} />
-          <RoleCard icon={ShieldCheck} accent="coral" title="Admin" description="Rules, audit log and system settings." onEnter={() => toast({ kind: "info", title: "Roles arrive in Phase 6" })} />
+          <RoleCard icon={School} title="Principal" description="Review issues, approve or hold, export." onEnter={() => toast({ kind: "info", title: "Style guide only", body: "Use /enter to sign in as a role." })} />
+          <RoleCard icon={GraduationCap} accent="aqua" title="Teacher" description="See and fix records for your own classes." onEnter={() => toast({ kind: "info", title: "Style guide only", body: "Use /enter to sign in as a role." })} />
+          <RoleCard icon={LayoutGrid} accent="violet" title="MIS Coordinator" description="Cluster view across schools." onEnter={() => toast({ kind: "info", title: "Style guide only", body: "Use /enter to sign in as a role." })} />
+          <RoleCard icon={BookUser} accent="aqua" title="Student and Parent" description="See your record status, confirm details (consent mockup)." onEnter={() => toast({ kind: "info", title: "Style guide only", body: "Use /enter to sign in as a role." })} />
+          <RoleCard icon={ShieldCheck} accent="coral" title="Admin" description="Rules, audit log and system settings." onEnter={() => toast({ kind: "info", title: "Style guide only", body: "Use /enter to sign in as a role." })} />
         </div>
       </Section>
 
@@ -276,7 +276,7 @@ export function Styleguide() {
         }
       >
         <p className="text-sand">Date of birth cannot be read.</p>
-        <p className="mt-2 text-sm text-mist">Example panel. The real issue detail arrives in Phase 5.</p>
+        <p className="mt-2 text-sm text-mist">Example panel. The real issue detail opens from the dashboard.</p>
       </SidePanel>
     </main>
   );

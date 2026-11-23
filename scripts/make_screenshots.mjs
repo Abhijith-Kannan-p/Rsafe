@@ -8,7 +8,7 @@
 // Browser: uses an installed Microsoft Edge or Google Chrome through playwright-core, so no
 // browser download is needed. Set RSAFE_BROWSER=chrome|msedge|chromium to choose.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { BACKEND, FRONTEND, IS_WIN, ROOT, requireVenv, run } from "./_python.mjs";
@@ -194,7 +194,7 @@ try {
   // 05 Cross-school duplicates, seen by the MIS coordinator.
   await signIn("mis_coordinator");
   await page.goto(`${BASE}/app/duplicates`);
-  await page.getByRole("button", { name: /^Open issue for/ }).first().waitFor();
+  await page.getByRole("button", { name: /^Open issue:/ }).first().waitFor();
   await shot("05-duplicates.png");
 
   // 07 Cluster mix. SYN-0001's principal decides every flag (ready); SYN-0003's principal
@@ -226,6 +226,25 @@ try {
   await page.waitForTimeout(800); // let the broken row scroll into view
   await shot("06-audit.png");
 
+  // Smaller copies for the landing page: the browser itself re-encodes each PNG as WebP,
+  // so no image library is needed. The PNGs stay as the full-quality originals.
+  const enc = await ctx.newPage();
+  for (const file of written) {
+    const png = readFileSync(join(OUT, file)).toString("base64");
+    const webp = await enc.evaluate(async (b64) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext("2d").drawImage(img, 0, 0);
+      return c.toDataURL("image/webp", 0.82).split(",")[1];
+    }, png);
+    writeFileSync(join(OUT, file.replace(/\.png$/, ".webp")), Buffer.from(webp, "base64"));
+  }
+  console.log(`  ✓ ${written.length} WebP copies`);
+
   await ctx.close();
 } catch (e) {
   console.error(`\nScreenshot run failed: ${e.message}`);
@@ -238,7 +257,8 @@ try {
 // The landing page reads this list, so a missing image shows a placeholder instead of a 404.
 const order = ["01-upload.png", "02-dashboard.png", "03-issue.png", "04-held.png", "05-duplicates.png", "06-audit.png", "07-cluster.png"];
 const present = order.filter((f) => existsSync(join(OUT, f)));
-writeFileSync(join(OUT, "manifest.json"), JSON.stringify({ files: present }, null, 2) + "\n");
+const webp = present.filter((f) => existsSync(join(OUT, f.replace(/\.png$/, ".webp"))));
+writeFileSync(join(OUT, "manifest.json"), JSON.stringify({ files: present, webp }, null, 2) + "\n");
 console.log(`\n${written.length} screenshot(s) written to frontend/public/shots/ (${present.length}/7 present).`);
 if (consoleErrors.length) console.log("Browser console errors:\n" + consoleErrors.join("\n"));
 setTimeout(() => process.exit(process.exitCode ?? 0), 500);

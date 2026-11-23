@@ -25,7 +25,9 @@ ACTIVE = ("open", "held")
 
 
 def _rows(s: Session, model) -> list[dict[str, Any]]:
-    return [r.model_dump() for r in s.exec(select(model))]
+    # Plain table rows (same column types as the ORM gives) rather than ORM objects: building and
+    # dumping one object per attendance row made reading 5,000 students about 10x slower.
+    return [dict(r) for r in s.connection().execute(select(model.__table__)).mappings()]
 
 
 def dataset_from_db(s: Session) -> tuple[dict[str, list[dict]], Context]:

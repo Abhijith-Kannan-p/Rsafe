@@ -9,6 +9,7 @@
     "test": "node scripts/task.mjs test",
     "seed": "node scripts/task.mjs seed",
     "screenshots": "node scripts/task.mjs screenshots",
+    "bench": "node scripts/task.mjs bench",
     "build": "npm --prefix frontend run build",
     "typecheck": "npm --prefix frontend run typecheck"
   }

@@ -1,5 +1,5 @@
 # Thin wrappers around the npm scripts, which work on Windows, macOS and Linux.
-.PHONY: setup dev test seed screenshots build
+.PHONY: setup dev test seed screenshots bench build
 
 setup:
 	npm run setup
@@ -15,6 +15,9 @@ seed:
 
 screenshots:
 	npm run screenshots
+
+bench:
+	npm run bench
 
 build:
 	npm run build

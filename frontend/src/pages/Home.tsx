@@ -10,19 +10,23 @@ import { RoleGrid } from "./Enter";
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** Which screenshots exist. The script writes the manifest, so missing files never cause a 404. */
-function useShots() {
-  const [files, setFiles] = useState<Set<string>>(new Set());
+type Shots = { files: Set<string>; webp: Set<string> };
+
+function useShots(): Shots {
+  const [shots, setShots] = useState<Shots>({ files: new Set(), webp: new Set() });
   useEffect(() => {
     let live = true;
     fetch("/shots/manifest.json", { cache: "no-cache" })
-      .then((r) => (r.ok ? r.json() : { files: [] }))
-      .then((m: { files?: string[] }) => live && setFiles(new Set(m.files ?? [])))
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((m: { files?: string[]; webp?: string[] }) => {
+        if (live) setShots({ files: new Set(m.files ?? []), webp: new Set(m.webp ?? []) });
+      })
       .catch(() => undefined);
     return () => {
       live = false;
     };
   }, []);
-  return files;
+  return shots;
 }
 
 function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
@@ -40,7 +44,9 @@ function Reveal({ children, className, delay = 0 }: { children: ReactNode; class
   );
 }
 
-function BrowserFrame({ file, path, title, present }: { file: string; path: string; title: string; present: boolean }) {
+type FrameProps = { file: string; path: string; title: string; present: boolean; webp: boolean };
+
+function BrowserFrame({ file, path, title, present, webp }: FrameProps) {
   return (
     <div className="glass overflow-hidden !rounded-2xl p-0">
       <div className="flex items-center gap-2 border-b border-white/10 bg-white/[0.04] px-4 py-2.5">
@@ -52,15 +58,18 @@ function BrowserFrame({ file, path, title, present }: { file: string; path: stri
         </span>
       </div>
       {present ? (
-        <img
-          src={`/shots/${file}`}
-          alt={`Screenshot: ${title}`}
-          width={1440}
-          height={900}
-          loading="lazy"
-          decoding="async"
-          className="block aspect-[16/10] w-full object-cover object-top"
-        />
+        <picture>
+          {webp && <source type="image/webp" srcSet={`/shots/${file.replace(/\.png$/, ".webp")}`} />}
+          <img
+            src={`/shots/${file}`}
+            alt={`Screenshot: ${title}`}
+            width={1440}
+            height={900}
+            loading="lazy"
+            decoding="async"
+            className="block aspect-[16/10] w-full object-cover object-top"
+          />
+        </picture>
       ) : (
         <div className="grid aspect-[16/10] place-items-center bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.03)_0_14px,transparent_14px_28px)]">
           <div className="text-center text-mist">
@@ -156,7 +165,7 @@ function Showcase() {
         {SHOWCASE.map((s, i) => (
           <li key={s.file} className="grid items-center gap-8 lg:grid-cols-12">
             <Reveal className={cn("lg:col-span-8", i % 2 === 1 && "lg:order-2")}>
-              <BrowserFrame file={s.file} path={s.path} title={s.title} present={shots.has(s.file)} />
+              <BrowserFrame file={s.file} path={s.path} title={s.title} present={shots.files.has(s.file)} webp={shots.webp.has(s.file)} />
             </Reveal>
             <Reveal className={cn("lg:col-span-4", i % 2 === 1 && "lg:order-1")} delay={0.15}>
               <span className="font-display text-5xl font-bold text-saffron/40" aria-hidden>

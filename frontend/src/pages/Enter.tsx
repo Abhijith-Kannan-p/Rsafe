@@ -51,6 +51,7 @@ export function Enter() {
         Pick a demo role. Each one sees only what that person would see; the server checks the role on every request.
       </p>
       <div className="mt-10">
+        <h2 className="sr-only">Demo roles</h2>
         <RoleGrid />
       </div>
       <p className="mt-10 text-sm text-mist">{SYNTHETIC_LINE} No real students, schools or Aadhaar numbers.</p>

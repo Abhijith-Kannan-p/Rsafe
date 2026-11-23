@@ -11,7 +11,7 @@ REPO_DIR = BACKEND_DIR.parent
 
 DATA_DIR = BACKEND_DIR / "data"
 RULES_DIR = BACKEND_DIR / "rules"
-# Per-school HMAC keys and the cluster key live here (git-ignored). Used from Phase 3.
+# Per-school HMAC keys and the cluster master secret live here (git-ignored).
 KEYS_DIR = Path(os.environ.get("RSAFE_KEYS_DIR", REPO_DIR / ".keys"))
 
 # Academic year 2026-27. Ages are measured on 30 Sep of this year.

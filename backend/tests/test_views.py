@@ -129,3 +129,15 @@ def test_schools_list(client, seeded_db):
     assert client.get("/api/schools").status_code == 401
     login(client, "teacher")
     assert [s["code"] for s in client.get("/api/schools").json()] == ["SYN-0001", "SYN-0002", "SYN-0003"]
+
+
+def test_demo_parent_keeps_the_same_child_after_the_name_fix(client, seeded_db):
+    """The principal approving Ananya's name fix must not move the parent login to another child."""
+    login(client, "student_parent")
+    before = client.get("/api/my/record").json()["student"]["student_ref"]
+    login(client, "principal", "SYN-0002")
+    issue = next(i for i in client.get("/api/issues", params={"rule_id": "STU-005"}).json() if i["entity_ref"] == before)
+    assert client.post(f"/api/issues/{issue['id']}/approve", json={}).status_code == 200
+    login(client, "student_parent")
+    rec = client.get("/api/my/record").json()
+    assert rec["student"]["student_ref"] == before and rec["student"]["name"] == "Ananya R. Kumar"

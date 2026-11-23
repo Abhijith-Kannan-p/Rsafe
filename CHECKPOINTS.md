@@ -507,3 +507,88 @@ I walked through this in headless Edge:
   is above the fold. At 900px they can't both fit.
 - `/enter` and the landing grid share `RoleCard`, whose `<h3>` sits under an `<h1>` on `/enter`. The
   heading order will be checked in Phase 8's accessibility pass.
+
+## Phase 8: Polish and demo readiness (23 Nov 2026)
+
+### What works
+- **README.md, rewritten in full.** It covers:
+  - what Rsafe is and the problem it solves
+  - how to run it, with every command
+  - the demo roles
+  - how it works, with a mermaid diagram, the stack and the repo layout
+  - all 11 rules
+  - the readiness and cluster-status formulas
+  - the privacy design and its limits
+  - "nothing happens without a person"
+  - what is mocked
+  - measured quality and future work
+- **DEMO_SCRIPT.md.** A five-minute, click-by-click story: landing, import, explain and fix, the held
+  dropout flag, duplicates, the cluster, audit tampering, close. It also has extra-time steps (parent,
+  export, teacher, rules) and answers to likely questions.
+  - I dry-ran it in Edge on fresh seed data. Every number and name in the script matches what you will
+    see: 87% → 89%, rows 22 and 25, the 3125 pair, "Bhavya Rao" / "Bhavya R.", "Sorted" for the parent.
+- **`npm run bench` (`backend/bench.py`, also `make bench`, `./run.sh bench`).** Times validation on 5,004
+  synthetic students in a throwaway folder.
+- **Performance.**
+  - Validation reads plain table rows instead of ORM objects. Full validation dropped from 1.3 s to
+    0.69 s on the same run conditions.
+  - The screenshot script now also writes a WebP copy of each PNG, re-encoded by the browser, so no new
+    dependency. Total 0.48 MB instead of 6.7 MB.
+  - The landing page serves the WebP copies through `<picture>`, with the PNG as fallback.
+  - Production landing page (Lighthouse 13.6), mobile and desktop: performance, accessibility and best
+    practices all 100. LCP 1.5 s on mobile and 0.2 s on desktop; 545 KB in total.
+- **Accessibility.** Lighthouse accessibility scores 100 on 13 screens and states:
+  - landing, enter
+  - dashboard, dashboard with the issue panel open
+  - upload, duplicates, export, rules
+  - classes, cluster, cluster drill-in
+  - audit, my record
+
+  Two fixes got there: the hidden file input now has a label, and the duplicate cards' accessible name
+  starts with their visible text. `/enter` gained a hidden `<h2>` so its heading order no longer skips a level.
+- **Empty and error states.**
+  - **Server unreachable:** a clear "Can't reach the Rsafe server" message replaces a raw proxy error.
+  - **Session expired:** any 401 sends you back to `/enter`.
+  - **Render crash:** an error boundary around each screen (and the whole app) shows a recovery card,
+    and the navigation stays usable.
+  - **Teacher with no classes:** shows a message instead of an empty grid.
+  - Checked in the browser by forcing each failure.
+- **Fixes found while testing.**
+  - **Demo parent identity:** it was found by name, so after the principal approved "Ananya R. Kumar" the
+    parent login moved to a different child. It is now pinned to `SYN-0002-S0029`, with a test.
+  - **Notes with ID numbers:** approve, edit and hold notes now refuse ID-like numbers, because notes are
+    kept in the audit log forever. Tested.
+  - **STU-008 wording:** "the student a fee was paid on…" now reads "the student had a fee paid on…".
+  - **FAC-001 wording:** "The toilet girls is marked functional" now reads "The girls' toilet is marked
+    functional". Both wording tests now assert the full phrase.
+  - **Stale text:** "arrives in Phase N" comments and Styleguide toasts are cleaned up.
+
+### How to verify
+```
+npm run test         # expect: 220 passed
+npm run build
+npm run bench        # prints engine and full-validation times
+npm run seed && npm run dev
+```
+Then follow DEMO_SCRIPT.md from the top.
+
+My checks: a browser tour of all 19 screens across the five roles logged no console errors. Each forced
+failure (502, 401, malformed response) showed its intended message.
+
+### Decisions taken (ambiguities)
+- **Lighthouse ran through `npx`.** It went into npm's cache only; it is not a project dependency.
+- **The README reports a range, not the best run.** Over four benchmark runs on 23 Nov 2026, the same code
+  measured a 98 to 266 ms engine and 0.69 to 1.83 s full validation. Later runs were slower under a
+  heavier machine state.
+- **The 4.9 to 8.9 s CSV load is the one-time seed loader, not user-facing validation.** I left it
+  unoptimised.
+- **The PNGs stay in the repo** as the spec's named originals. The page serves the WebP copies.
+
+### Known gaps
+- **Server restarts on Windows:** `uvicorn --reload` sometimes misses code changes there. Restart
+  `npm run dev` after editing backend code. Ctrl+C stops both servers cleanly.
+- **Extra features 1 to 10 are not built.** The README lists them as future work. The nearest substitutes:
+  - Printable report (8) is covered by Export's readiness report.
+  - Rule coverage (9) is covered by the "Addresses" column on the Rules screen.
+  - Validation time (10) is covered by the "Run validation" toast and `npm run bench`.
+- **The audit screenshot** shows the broken row and toast but not the top banner, as noted in Phase 7.

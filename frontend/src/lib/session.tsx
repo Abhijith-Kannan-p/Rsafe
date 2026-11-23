@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, post, type Identity, type Role } from "./api";
+import { api, post, SESSION_LOST, type Identity, type Role } from "./api";
 
 type Ctx = {
   identity: Identity | null;
@@ -27,6 +27,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .then((r) => setIdentity(r.identity))
       .catch(() => setIdentity(null))
       .finally(() => setLoading(false));
+    // a 401 anywhere means the cookie expired or was cleared: drop the identity so the shell redirects
+    const lost = () => setIdentity(null);
+    window.addEventListener(SESSION_LOST, lost);
+    return () => window.removeEventListener(SESSION_LOST, lost);
   }, []);
 
   const signIn = useCallback(async (role: Role, schoolCode?: string) => {

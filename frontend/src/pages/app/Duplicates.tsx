@@ -65,8 +65,8 @@ function SideCard({ side, onOpen }: { side: Side; onOpen: (id: number) => void }
       type="button"
       onClick={() => onOpen(side.issue!.id)}
       className="flex-1 rounded-2xl bg-white/[0.05] p-4 text-left transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-saffron"
-      aria-label={`Open issue for ${side.student_ref} at ${side.school_code}`}
     >
+      <span className="sr-only">Open issue: </span>
       {inner}
     </button>
   ) : (

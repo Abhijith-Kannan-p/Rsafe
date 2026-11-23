@@ -1,7 +1,7 @@
 """Database tables.
 
 Privacy invariant: no table has a column for a full Aadhaar number. Students carry only
-`aadhaar_token` (keyed HMAC, Phase 3) and `aadhaar_last4`.
+`aadhaar_token` (keyed HMAC) and `aadhaar_last4`.
 """
 
 from __future__ import annotations

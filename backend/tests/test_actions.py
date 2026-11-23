@@ -140,3 +140,15 @@ def test_every_action_keeps_chain_valid(client, seeded_db):
         client.post(f"/api/issues/{i['id']}/hold", json={})
     login(client, "admin")
     assert client.get("/api/audit/verify").json()["ok"]
+
+
+def test_notes_with_id_numbers_are_refused(client, seeded_db, db):
+    """Notes are kept in the audit log forever, so an ID number must never get in there."""
+    login(client, "principal", "SYN-0002")
+    issue = next(i for i in issues_by(client, rule_id="STU-002") if "31/02/2015" in i["detail"])
+    audit_before = last_audit(db).id
+    for action, extra in (("approve", {}), ("hold", {}), ("edit", {"field": "dob", "value": "28/02/2015"})):
+        r = client.post(f"/api/issues/{issue['id']}/{action}", json={"note": "checked 0123 4567 8901", **extra})
+        assert r.status_code == 422 and "ID number" in r.json()["detail"], (action, r.text)
+    assert last_audit(db).id == audit_before
+    assert student(db, issue["entity_ref"]).dob == "31/02/2015"

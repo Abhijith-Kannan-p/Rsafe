@@ -20,7 +20,10 @@ router = APIRouter(prefix="/api/session", tags=["session"])
 
 DEFAULT_SCHOOL = "SYN-0002"
 DEFAULT_CLUSTER = "CL-01"
-DEMO_STUDENT_NAME = "Ananya Kumar"  # has a spelling issue, good for the parent view
+# The demo parent's child: "Ananya Kumar", who has a spelling issue (good for the parent view).
+# Found by ID, not name, so the identity survives the principal approving the name fix.
+DEMO_STUDENT_REF = "SYN-0002-S0029"
+DEMO_STUDENT_NAME = "Ananya Kumar"
 
 
 class SessionRequest(BaseModel):
@@ -67,7 +70,8 @@ def build_identity(s: Session, role: Role, school_code: str | None) -> Identity:
     if role == Role.ADMIN:
         return Identity(role=role, actor=f"Demo {label}")
     # Student and parent
-    st = s.exec(select(m.Student).where(m.Student.name == DEMO_STUDENT_NAME)).first() \
+    st = s.exec(select(m.Student).where(m.Student.student_ref == DEMO_STUDENT_REF)).first() \
+        or s.exec(select(m.Student).where(m.Student.name == DEMO_STUDENT_NAME)).first() \
         or s.exec(select(m.Student).order_by(m.Student.id)).first()
     if st is None:
         raise HTTPException(400, "No students loaded. Run the seed first.")

@@ -377,7 +377,7 @@ def dropout_with_activity(rec: dict, ctx: Context, params: dict) -> Finding | No
     if present:
         signs.append(f"attended on {len(present)} day{'s' if len(present) > 1 else ''} (last on {_fmt(present[-1])})")
     if paid:
-        signs.append(f"a fee was paid on {_fmt(paid[-1])}")
+        signs.append(f"had a fee paid on {_fmt(paid[-1])}")
     return Finding(
         f"Marked as a dropout, but in the last {window} days the student {' and '.join(signs)}.",
         {"enrolment_status": "dropout", "window_days": window, "since": _fmt(since),
@@ -408,6 +408,12 @@ def teacher_subject_match(rec: dict, ctx: Context, params: dict) -> list[Finding
 
 # ---------------------------------------------------------------- FAC-001
 
+FACILITY_LABELS = {
+    "drinking_water": "drinking water supply", "toilet_boys": "boys' toilet", "toilet_girls": "girls' toilet",
+    "electricity": "electricity supply", "ramp": "ramp", "library": "library", "playground": "playground",
+}
+
+
 @check("facility_matches_log")
 def facility_matches_log(rec: dict, ctx: Context, params: dict) -> Finding | None:
     log = ctx.maintenance.get(rec.get("facility_ref", ""), [])
@@ -418,7 +424,8 @@ def facility_matches_log(rec: dict, ctx: Context, params: dict) -> Finding | Non
     condition = str(latest.get("condition") or "").strip().lower()
     ev = {"status": status, "latest_log_date": latest.get("date"), "latest_condition": condition,
           "log_note": latest.get("note", "")}
-    label = str(rec.get("facility_type", "facility")).replace("_", " ")
+    kind = str(rec.get("facility_type", "facility"))
+    label = FACILITY_LABELS.get(kind, kind.replace("_", " "))
     if status == "functional" and condition == "broken":
         return Finding(
             f"The {label} is marked functional, but the maintenance log on {latest.get('date')} says broken "

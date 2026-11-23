@@ -149,7 +149,7 @@ def test_stu008_bad_recent_attendance_is_held():
 
 def test_stu008_bad_recent_fee_is_held():
     [i] = run("STU-008", [student(enrolment_status="Dropout")], activity(fees=["05/11/2026"]))
-    assert i.held and "fee was paid on 05/11/2026" in i.detail
+    assert i.held and "in the last 30 days the student had a fee paid on 05/11/2026." in i.detail
 
 
 # ------------------------------------------------------------------ TCH-001
@@ -194,7 +194,7 @@ def test_fac001_good(status, entries):
 def test_fac001_bad_functional_but_broken():
     # log rows out of order on purpose: the latest by date must win
     [i] = run("FAC-001", [facility("functional")], log(("03/11/2026", "broken"), ("01/09/2026", "working")), "facility")
-    assert "toilet girls is marked functional" in i.detail and i.evidence["latest_log_date"] == "03/11/2026"
+    assert "The girls' toilet is marked functional" in i.detail and i.evidence["latest_log_date"] == "03/11/2026"
 
 
 def test_fac001_bad_non_functional_but_repaired():

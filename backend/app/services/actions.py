@@ -151,8 +151,15 @@ def _apply(s: Session, issue: m.Issue, field: str, value: Any) -> tuple[Any, Any
     return old, cleaned
 
 
+def _check_note(note: str) -> None:
+    # Notes go into the audit log, which is never edited, so an ID typed there could never be removed.
+    if note and ID_LIKE.search(note):
+        raise HTTPException(422, "The note looks like it contains an ID number. Please leave ID numbers out.")
+
+
 def approve(s: Session, issue: m.Issue, who: Identity, note: str = "") -> m.AuditEntry:
     check_permission(who, issue, "approve")
+    _check_note(note)
     if issue.suggested_field and issue.suggested_value is not None:
         old, new = _apply(s, issue, issue.suggested_field, issue.suggested_value)
         return _finish(s, issue, who, "approved", "issue.approve", issue.suggested_field, old, new, note)
@@ -162,10 +169,12 @@ def approve(s: Session, issue: m.Issue, who: Identity, note: str = "") -> m.Audi
 
 def edit(s: Session, issue: m.Issue, who: Identity, field: str, value: Any, note: str = "") -> m.AuditEntry:
     check_permission(who, issue, "edit")
+    _check_note(note)
     old, new = _apply(s, issue, field, value)
     return _finish(s, issue, who, "edited", "issue.edit", field, old, new, note)
 
 
 def hold(s: Session, issue: m.Issue, who: Identity, note: str = "") -> m.AuditEntry:
     check_permission(who, issue, "hold")
+    _check_note(note)
     return _finish(s, issue, who, "held", "issue.hold", None, None, None, note)

@@ -13,11 +13,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABEL, type Role, type SchoolOption, type SchoolSummary } from "../lib/api";
 import { cn } from "../lib/cn";
 import { can, HOME, useSession } from "../lib/session";
 import { useApi } from "../lib/useApi";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { useToast } from "./Toast";
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
@@ -127,6 +128,7 @@ function RoleSwitcher({ role, school }: { role: Role; school: string | null }) {
 export function AppShell() {
   const { identity, loading, signOut } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
   const summary = useApi<{ schools: SchoolSummary[] }>(identity ? `/summary?as=${encodeURIComponent(identity.actor)}` : null);
 
   if (loading) {
@@ -192,7 +194,9 @@ export function AppShell() {
         </header>
         <main id="main" className="flex-1 px-4 py-6 md:pl-0 md:pr-6">
           {/* remount on identity change so no page shows data fetched for the previous role */}
-          <Outlet key={identity.actor} />
+          <ErrorBoundary resetKey={location.pathname}>
+            <Outlet key={identity.actor} />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

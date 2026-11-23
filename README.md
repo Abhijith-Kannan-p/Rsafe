@@ -2,65 +2,272 @@
 
 **Every record, right before it counts.**
 
-Rsafe checks a school's student, teacher and facility records before they are submitted to UDISE+. It
-explains each problem in plain language, suggests a fix, and never changes anything without a person
-approving it.
+Rsafe checks a school's student, teacher and facility records before they are submitted to UDISE+. It runs
+versioned rules, explains each problem in plain language, suggests a fix, holds risky flags for a person
+to decide, finds the same child enrolled in two schools without sharing raw IDs, keeps a tamper-evident
+audit log, and exports a clean file with a readiness score. It never changes or submits anything by itself.
 
-> **Prototype on synthetic data.** All names, schools and IDs are generated. Rsafe does not verify Aadhaar
-> and makes no calls to UIDAI or any government portal.
+> **Prototype on synthetic data.** All names, schools and ID numbers are generated. Rsafe does not verify
+> Aadhaar, makes no calls to UIDAI or any government portal, and the parent confirmation flow is a mockup.
+
+![The cluster view: one school ready, one fixing, one blocked](frontend/public/shots/07-cluster.png)
+
+Team **kabhijith447** · PRASUNEX INNOVATHON 2026 (Round 3)
+
+## The problem
+
+Schools enter records into UDISE+ once a year, often from a spreadsheet kept by one person. Records come
+back rejected or, worse, are accepted wrong:
+
+- **Names and dates:** names spelled differently from the admission register, and dates of birth that
+  cannot be read or put a child in the wrong class.
+- **Duplicates:** the same child entered twice, or still enrolled at a school they have left.
+- **Dropouts:** children marked as dropouts while still attending. That can cut them off from benefits.
+- **Merged schools:** students of merged or closed schools with no transfer recorded, so they vanish from
+  both schools' counts.
+- **Staff and buildings:** teachers assigned outside their subject, and facilities marked "functional"
+  while a repair is open.
+
+Each of these is cheap to fix before submission and expensive after. Rsafe catches them while the school
+can still fix them, and leaves every decision to a person.
 
 ## Run it
 
-Requires Python 3.11+ and Node 18+.
+Requires Python 3.11+ and Node 18+. Works on Windows, macOS and Linux.
 
 ```
-npm run setup   # once: venv, dependencies, synthetic data
+npm run setup   # once: Python venv, dependencies, synthetic data, database
 npm run dev     # web http://127.0.0.1:5173, api http://127.0.0.1:8765
 ```
 
-Open http://127.0.0.1:5173/enter and pick a role. As Principal, try **Upload, then Load sample messy file**.
+Open http://127.0.0.1:5173. **Enter Rsafe** lets you pick a demo role. For a guided five-minute run, follow
+[DEMO_SCRIPT.md](DEMO_SCRIPT.md).
 
-Other commands: `npm run test`, `npm run seed`, `npm run build`. `make <target>` and `./run.sh <target>`
-do the same thing.
+| Command | What it does |
+|---|---|
+| `npm run test` | 220 backend tests (about 20 to 45 s) |
+| `npm run seed` | rebuild the synthetic data and database. This also resets the demo. |
+| `npm run build` | type-check and build the frontend |
+| `npm run bench` | time validation on about 5,000 synthetic students (throwaway database) |
+| `npm run screenshots` | regenerate the landing-page images (throwaway database, its own ports 8766 and 5174) |
 
-`npm run screenshots` regenerates the seven landing-page images in `frontend/public/shots/`. It seeds a
-throwaway database in `scripts/.shots-tmp/`, starts its own API (port 8766) and web server (port 5174), and
-drives the app in an installed Edge or Chrome (`RSAFE_BROWSER=chrome` to choose). Your dev database is not
-touched. Stop `npm run dev` first only if those ports are busy.
+`make <target>` and `./run.sh <target>` run the same commands.
+
+## Who uses it (demo roles)
+
+| Role | Home screen | Can |
+|---|---|---|
+| Principal | Dashboard | see their school, approve, edit or hold any issue, upload, export, run validation |
+| Teacher | My classes | see only the students they teach (and their own record), approve or edit those issues |
+| MIS Coordinator | Cluster | see every school in the cluster as ready, fixing or blocked, drill in, export |
+| Admin | Audit log | read and verify the audit log, see all schools and rules |
+| Student and Parent | My record | see one child's record and what is being checked, confirm or report a mistake (mockup) |
+
+The role switcher in the top bar changes role, and for Principal and Teacher, the school. Roles are
+enforced on the server for every request:
+
+- **No session:** 401.
+- **Wrong role:** 403.
+- **Record outside your scope:** 404, the same answer as for a record that does not exist.
+
+The UI hides what you cannot use, but it is not what protects the data.
+
+## How it works
+
+```mermaid
+flowchart LR
+  subgraph School["Inside the school"]
+    CSV["School's export<br/>(CSV with Aadhaar)"] --> IMP["Import<br/>map columns, preview"]
+    IMP --> TOK["Tokenise<br/>HMAC with the school key<br/>+ HMAC with the cluster key<br/>+ last 4 digits"]
+  end
+  TOK -- "raw IDs stop here" --> DB[("SQLite<br/>tokens, last 4,<br/>issues, audit chain")]
+  RULES["Rules<br/>YAML, versioned"] --> ENG["Rule engine"]
+  DB --> ENG --> ISS["Issues<br/>plain reason, evidence,<br/>suggested fix"]
+  ISS --> UI["Web app<br/>by role"]
+  UI -- "approve / edit / hold<br/>(a person, every time)" --> ACT["Action"] --> AUD["Audit log<br/>SHA-256 hash chain"]
+  ACT --> ENG
+  UI --> EXP["Export<br/>clean CSV + readiness report"] -. "uploaded by a person" .-> UDISE["UDISE+"]
+```
+
+1. **Import.** The Principal drops in the school's own export. Rsafe suggests a column mapping and shows
+   blocking errors (wrong school, missing or duplicate IDs) and warnings by row. Nothing is saved until a
+   person confirms.
+2. **Check.** Every rule runs over every record. Each problem becomes an issue with the rule ID and
+   version, a plain-language reason, the evidence the rule used, a confidence note and, where possible, a
+   suggested value.
+3. **Review.** A person approves the fix, edits the value, or holds the issue. Dropout flags (STU-008) start
+   held and are never applied automatically. Each action is written to the audit log, then validation
+   re-runs. A fixed value that goes wrong again reopens its issue.
+4. **Submit.** Export the cleaned CSV and a one-page readiness report. A person uploads them to UDISE+.
+
+**Readiness score:** the share of records with no open problem. Each record counts once, by its worst open
+issue: high removes the whole record, medium half and low a fifth. Held issues count as open.
+
+**Cluster status:**
+- **Blocked:** any high-severity or held issue is open.
+- **Fixing:** only medium or low issues are left.
+- **Ready:** nothing is waiting.
+
+### Stack
+
+- **Backend:** FastAPI, SQLModel on SQLite, Pydantic v2 and PyYAML. Demo sessions are a signed cookie
+  (itsdangerous). Tests use pytest.
+- **Frontend:** Vite, React 18, TypeScript, Tailwind CSS v4, Framer Motion, lucide icons and self-hosted
+  fonts. There are no external requests at runtime.
+- **No paid services, API keys or external calls.**
+
+```
+backend/
+  app/routes/      HTTP API (session, issues, upload, export, audit, rules, views)
+  app/services/    rule engine, checks, tokens, keys, validation, actions, audit, upload, export
+  rules/           one YAML file per rule (see rules/README.md)
+  data/            the committed synthetic dataset
+  tests/           pytest suite
+  seed.py          synthetic data generator
+  bench.py         validation benchmark
+frontend/src/
+  pages/           landing, role picker, and app screens
+  components/      glass design system (cards, buttons, panels, tables, toasts)
+scripts/           cross-platform npm tasks and the screenshot pipeline
+```
+
+## Rules
+
+All 11 rules are YAML files in [backend/rules/](backend/rules/). Each declares an ID, a version, a
+severity, the check it uses, the government failure reason it addresses, the message and the fix. Every
+issue is stamped with the version of the rule that raised it, and the Rules screen lists them all.
+
+| ID | Checks | Severity | Addresses |
+|---|---|---|---|
+| STU-001 | Student name missing or malformed | high | Name or spelling mismatch |
+| STU-002 | Date of birth missing, unreadable or outside the class's age band | high | Date of birth problems |
+| STU-003 | Gender missing or different from last year | medium | Gender discrepancy |
+| STU-004 | Aadhaar missing or update pending | high | Missing Aadhaar |
+| STU-005 | Name spelled differently from the admission register | medium | Name or spelling mismatch |
+| STU-006 | Same student entered twice in one school (school token) | high | Duplicate enrolment |
+| STU-007 | Same student enrolled in two schools (cluster match token) | high | Duplicate enrolment |
+| STU-008 | Dropout flag contradicted by recent attendance or fees (**held for review**) | high | Wrong dropout or closure status |
+| SYS-001 | Transfer status missing after a school closure or merger | high | School closure or merger gaps |
+| TCH-001 | Teacher assigned outside their subject | medium | Teacher data mismatch |
+| FAC-001 | Facility status contradicts the maintenance log | medium | Facility data mismatch |
+
+Each rule has tests for both passing and failing records. A ground-truth test also checks that, on the
+seeded data, the rules flag exactly the problems the generator injected, and nothing else.
 
 ## Privacy design (and its limits)
 
-**Raw IDs stop at the school.** When a school file is imported, each Aadhaar number is
-turned into two keyed tokens and the last four digits, and the number itself is dropped
-(`backend/app/services/ingest.py`). Nothing after that point, including the database, the
-API and the audit log, ever holds it. A test (`tests/test_privacy.py`) dumps every table,
-scans the raw database file and calls every API route, and fails if any 12-digit number or
-any of the seeded IDs appears.
+**Raw IDs stop at the school.** When a school file is imported, each Aadhaar number is turned into two
+keyed tokens and the last four digits, and the number itself is dropped
+([backend/app/services/ingest.py](backend/app/services/ingest.py)). Nothing after that point holds it:
+not the database, the API, the audit log or the exports.
+
+A test ([backend/tests/test_privacy.py](backend/tests/test_privacy.py)) proves this:
+- It dumps every table, scans the raw database file, and calls every API route.
+- It fails if any 12-digit number, or any of the seeded IDs, appears.
 
 | Token | Formula | Used for |
 |---|---|---|
 | School token | `HMAC_SHA256(school_key, aadhaar)` | duplicates inside one school (STU-006) |
 | Match token | `HMAC_SHA256(cluster_match_key, aadhaar)` | the same child in two schools (STU-007) |
 
-- Each school has its own random key in `.keys/` (git-ignored), so school tokens cannot be compared across schools.
-- The cluster match key is derived from a cluster master secret: `HMAC(master, "rsafe/match-key/v1/" + cluster_id)`.
-  Every school in a cluster computes the same match token for the same child, so the platform can find
-  cross-school duplicates by comparing tokens, never numbers or names.
-- Tokens are base32 (letters and the digits 2-7 only), so unlike hex they don't produce
-  number runs that could be mistaken for, or hide, an ID.
-- Screens show only the first 6 characters of a token and the last 4 digits.
+- Each school has its own random key in `.keys/` (git-ignored), so school tokens cannot be compared across
+  schools.
+- The cluster match key is derived from a cluster master secret:
+  `HMAC(master, "rsafe/match-key/v1/" + cluster_id)`.
+  - Every school in a cluster computes the same match token for the same child.
+  - So the platform finds cross-school duplicates by comparing tokens, never numbers or names.
+- Tokens are base32 (letters and the digits 2-7 only). Unlike hex, they never produce digit runs that could
+  be mistaken for an ID, or hide one.
+- Screens show only the first 6 characters of a token and the last 4 digits. Free-text fields (edit
+  values, notes, parent comments) refuse anything that looks like an ID number.
 
 **Limits, stated honestly:**
-- A 12-digit number space is small. Anyone who has a key can brute-force tokens back into numbers.
-  Tokens are pseudonyms that protect IDs only while the keys stay secret; they are not anonymisation.
-- In this prototype one machine plays both the school and the platform, so all keys sit in one folder.
-  A real deployment would keep school keys at schools and give the platform no key at all.
+- A 12-digit number space is small. Anyone who has a key can brute-force tokens back into numbers. Tokens
+  are pseudonyms that protect IDs only while the keys stay secret; they are not anonymisation.
+- In this prototype one machine plays both the school and the platform, so all keys sit in one folder. A
+  real deployment would keep school keys at schools and give the platform no key at all.
 - Cross-school matching works only inside one cluster. Children who move between clusters are not matched.
 - Rotating a cluster key changes every match token; old and new tokens cannot be compared.
-- Rsafe does not verify that a number is a real Aadhaar number (no Verhoeff checksum, no UIDAI call).
-  It checks only that it has 12 digits.
+- Rsafe does not verify that a number is a real Aadhaar number (no Verhoeff checksum, no UIDAI call). It
+  checks only that it has 12 digits.
+- Names, dates of birth and guardian names are stored in plain text, as UDISE+ needs them. Only the Aadhaar
+  number is tokenised.
 
-Build progress is tracked in [CHECKPOINTS.md](CHECKPOINTS.md). The full README (architecture, rules,
-privacy design and its limits) arrives in Phase 8.
+## Nothing happens without a person
 
-Team kabhijith447 · PRASUNEX INNOVATHON 2026
+- **No automatic changes:** Rsafe never changes a record or submits a file by itself. Approve, edit and
+  hold are explicit actions, each written to the audit log with the actor, role, old and new value and
+  note.
+- **Hash-chained audit log:** each row stores
+  `hash = SHA256(prev_hash + canonical_json(ts, actor, role, action, record_ref, payload))`.
+  - **Verify chain** recomputes the chain and names the first broken row.
+  - The Admin screen has a **Tamper row (demo)** button that edits a row directly in the database, so
+    you can watch verification catch it.
+  - That button exists only with `RSAFE_DEMO_MODE=1`, which is the default for this prototype.
+
+## What is mocked
+
+- **Data:** all of it is synthetic. The generator ([backend/seed.py](backend/seed.py)) uses a fixed seed and
+  injects a known list of problems (`backend/data/injected.json`). Synthetic ID numbers start with 0.
+- **Sign-in:** a demo role picker, not real authentication. Identities are fixed synthetic people.
+- **Parent confirmation:** a mockup. The 6-digit code is shown on screen and no SMS is sent. The reply is
+  saved to the audit log and never changes the record.
+- **UDISE+:** not contacted. Export produces files a person would upload by hand.
+- **"Today":** pinned to 16 Nov 2026 (`RSAFE_TODAY`), so date-based rules give the same results on any day.
+
+## Measured quality
+
+**Validation speed** (`npm run bench`, Windows 11 laptop, Python 3.13, 5,004 synthetic students, 11 rules):
+
+| Step | Time (range over 4 runs on 23 Nov 2026) |
+|---|---|
+| Rule engine alone | **98 to 266 ms** (20 to 53 ms per 1,000 records) |
+| Full validation (read the database, run all rules, store issues, write the audit row) | **0.69 to 1.83 s** (140 to 370 ms per 1,000 records) |
+| One-time load from CSV (parse, tokenise, insert, including about 75,000 attendance rows) | 4.9 to 8.9 s |
+
+The same code ran at both ends of each range on the same laptop; the slower runs came later in the day,
+under a heavier machine state. Run `npm run bench` to measure on your own machine.
+
+Reading the database dominates full validation. Reading plain rows instead of ORM objects halved it, from
+1.3 s to 0.69 s, measured on the faster runs.
+
+**Accessibility** (Lighthouse 13.6, desktop, Microsoft Edge): **100** on every main screen and state:
+- landing, role picker
+- dashboard, dashboard with the issue panel open
+- upload, duplicates, export, rules
+- my classes, cluster, school drill-in
+- audit log, my record
+
+**Production landing page** (Lighthouse): performance, accessibility and best practices all score 100, on
+both mobile and desktop emulation.
+- **LCP:** 1.5 s on mobile, 0.2 s on desktop.
+- **Total transfer:** 545 KB. The screenshots are served as WebP; the full PNGs are kept as originals.
+
+**Browser console:** no errors on any screen for any role. The only errors are the 401 and 422 responses
+the server deliberately returns, for example to a wrong parent OTP code.
+
+**Error handling:**
+- When the server is unreachable, the app says so.
+- An expired session returns you to the role picker.
+- A screen that fails to render shows a recovery card while the navigation stays usable.
+
+**Tests:** 220 pytest tests:
+- every rule, with good and bad records, plus ground truth on the seed
+- token privacy
+- the audit chain, including tamper detection
+- role access for every route
+- upload, export and views
+
+## Future work
+
+- Real sign-in (school SSO) instead of demo roles, with keys held per school on separate machines.
+- A real consent and confirmation channel for parents (SMS or app), and a staff inbox for their replies.
+- Matching across clusters, through a privacy-preserving service that holds no school keys.
+- More rules: teacher qualifications against posts, enrolment trends, infrastructure photos.
+- Plain-language reasons in Hindi and Malayalam.
+- Postgres and a job queue for district-scale validation. The engine is already a pure function over
+  records.
+- The optional extras from the brief are not built: guided tour, dry-run submit, readiness trend, command
+  palette and others.
+
+Build history and decisions, phase by phase, are in [CHECKPOINTS.md](CHECKPOINTS.md).

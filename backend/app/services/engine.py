@@ -78,10 +78,8 @@ def run_rules(rules: list[RuleSpec], data: dict[str, list[dict]], ctx: Context) 
 
 
 def readiness_score(total_records: int, issues: list[IssueResult]) -> int:
-    """Share of records with no high-severity issue, minus a smaller weight for medium/low.
-
-    Simple and explainable on purpose; refined when the dashboard lands (Phase 5).
-    """
+    """Share of records with no open problem. Each record counts once, by its worst issue:
+    high removes it fully, medium half, low a fifth. Simple and explainable on purpose."""
     if total_records == 0:
         return 100
     worst: dict[str, int] = {}

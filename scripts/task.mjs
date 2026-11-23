@@ -10,6 +10,9 @@ switch (task) {
   case "seed":
     run(requireVenv(), ["seed.py", ...rest], { cwd: BACKEND });
     break;
+  case "bench":
+    run(requireVenv(), ["bench.py", ...rest], { cwd: BACKEND });
+    break;
   case "screenshots":
     await import("./make_screenshots.mjs");
     break;
