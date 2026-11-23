@@ -12,10 +12,10 @@ const SessionContext = createContext<Ctx | null>(null);
 
 export const HOME: Record<Role, string> = {
   principal: "/app/dashboard",
-  teacher: "/app/dashboard",
-  mis_coordinator: "/app/dashboard",
+  teacher: "/app/classes",
+  mis_coordinator: "/app/cluster",
   admin: "/app/audit",
-  student_parent: "/app/dashboard",
+  student_parent: "/app/my-record",
 };
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -64,4 +64,6 @@ export const can = {
   upload: (r: Role) => r === "principal",
   export: (r: Role) => r === "principal" || r === "mis_coordinator",
   audit: (r: Role) => r === "admin",
+  cluster: (r: Role) => r === "mis_coordinator" || r === "admin",
+  pickSchool: (r: Role) => r === "principal" || r === "teacher",
 };

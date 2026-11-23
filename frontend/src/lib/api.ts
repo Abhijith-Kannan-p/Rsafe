@@ -159,3 +159,47 @@ export function overallReadiness(schools: SchoolSummary[]): number {
   if (!n) return 100;
   return Math.round(schools.reduce((a, s) => a + s.readiness * s.students, 0) / n);
 }
+
+export type SchoolOption = { code: string; name: string; cluster: string };
+
+export type ClusterStatus = "ready" | "fixing" | "blocked";
+export type ClusterReason = { rule_id: string; title: string; severity: Severity; count: number; held: number; blocking: boolean };
+export type OpenTile = SchoolSummary & { cluster: string; status: ClusterStatus; reasons: ClusterReason[]; decided: number; resolved: number };
+export type ClosedTile = { school_code: string; name: string; cluster: string; status: "merged" | "closed"; merged_into: string | null };
+export type ClusterTile = OpenTile | ClosedTile;
+export type ClusterView = { cluster: string; counts: Partial<Record<string, number>>; students: number; schools: ClusterTile[] };
+export const isOpenTile = (t: ClusterTile): t is OpenTile => "readiness" in t;
+
+export type IssueBrief = { id: number; rule_id: string; severity: Severity; status: IssueStatus; title: string };
+export type ClassRoster = {
+  class_grade: number;
+  section: string;
+  subjects: string[];
+  active: number;
+  students: { student_ref: string; name: string; gender: string; dob: string; issues: IssueBrief[]; active: number }[];
+};
+export type MyClasses = {
+  teacher: { teacher_ref: string; name: string; subjects: string[] };
+  school_code: string;
+  classes: ClassRoster[];
+  own_issues: IssueBrief[];
+};
+
+export type Confirmation = { ts: string; outcome: "correct" | "needs_change"; comment: string; audit_id: number };
+export type MyRecord = {
+  student: {
+    student_ref: string;
+    name: string;
+    dob: string;
+    gender: string;
+    class_grade: number | null;
+    section: string;
+    guardian_name: string;
+    aadhaar: string | null;
+    aadhaar_status: string;
+    enrolment_status: string;
+  };
+  school: { code: string; name: string };
+  issues: { id: number; rule_id: string; severity: Severity; status: IssueStatus; title: string; message: string; fix: string }[];
+  confirmation: Confirmation | null;
+};

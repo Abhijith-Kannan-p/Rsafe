@@ -350,3 +350,86 @@ I re-seeded afterwards so the database starts clean.
   a console (it did in my background runs). If backend changes don't show, restart `npm run dev`. I added
   `--timeout-graceful-shutdown 1` so open proxy connections don't hold up a reload.
 - The cleaned CSV columns follow Rsafe's own names, not the official UDISE+ upload template.
+
+## Phase 6: Cluster, teacher and parent views, role switcher (2026-11-22)
+
+### What works
+- **Cluster view** (`/app/cluster`, MIS Coordinator; Admin sees it as "Schools"): one glass tile per school,
+  coloured by status, with readiness, a progress bar, the number that need action, held issues, and fixes
+  made by staff. Hovering or keyboard-focusing a tile shows the blocking reasons (rule, title, count, held).
+  The merged school SYN-0004 shows as a greyed "Merged into SYN-0001" tile. Counts of ready, fixing and
+  blocked schools sit at the top.
+  - **blocked:** a high-severity or held issue is waiting.
+  - **fixing:** only medium or low issues remain.
+  - **ready:** nothing active.
+- **Drill-in** (`/app/cluster/SYN-000X`): ring, counts, and every open rule with a "Blocking" tag. Each rule
+  links to the issue list filtered to that school and rule. Also links to the full issue list and to Export
+  (with the school preselected).
+- **Teacher view** (`/app/classes`, the teacher's home): one card per class with the subjects they teach there,
+  and the roster (name, ID, date of birth) with each student's issues as coloured rule chips. Clicking a
+  chip opens the same issue panel. Fixed issues show struck through. The teacher's own record issues (such
+  as TCH-001) are in a separate strip. The older issue list stays under "Issue list".
+- **Student and Parent view** (`/app/my-record`, the parent's home):
+  - The child's details on file (Aadhaar masked).
+  - A plain banner: "N things the school is checking".
+  - Each check in plain language, marked "Being checked", "Under review" or "Sorted".
+  - **Confirm details**, clearly labelled MOCKUP: (1) "correct" or "something is wrong" plus a comment;
+    (2) mock OTP screen, with the 6-digit code shown on screen because no SMS is sent; (3) done.
+  - A wrong code is refused. A right code writes `parent.confirm` or `parent.report` to the audit log and
+    changes nothing in the record. The last reply is shown on the page.
+  - Staff see replies in a new "Parent confirmations" section of the readiness report.
+- **Role switcher:** "Demo as" a role, plus a school picker for Principal and Teacher (any open school).
+  Each role lands on its own home:
+
+  | Role | Home |
+  |---|---|
+  | Principal | Dashboard |
+  | Teacher | My classes |
+  | MIS Coordinator | Cluster |
+  | Admin | Audit log |
+  | Parent | My record |
+
+  Parents no longer reach the dashboard.
+- **New endpoints:**
+  - `GET /api/schools`: open schools, for the picker.
+  - `GET /api/cluster`: MIS and Admin.
+  - `GET /api/my/classes`: teacher.
+  - `GET /api/my/record`: parent.
+  - `POST /api/my/confirm/start` and `POST /api/my/confirm`: parent.
+  - All are scoped on the server; other roles get 403.
+
+### How to verify
+```
+npm run test     # expect: 218 passed (about 45 s)
+npm run seed
+npm run dev      # http://127.0.0.1:5173/enter
+```
+1. MIS Coordinator: 3 blocked schools and one merged. Hover over Lakeside to see its reasons, then click it to drill in.
+2. Switch to Principal, then school SYN-0003. Approve its high and held issues, switch back to MIS: Lakeside
+   is now **Fixing** at 99%.
+3. Teacher: three classes. Click a chip and the issue panel opens.
+4. Parent: "Something is wrong", add a comment, "Send me a code", type the code shown, and you get "Done".
+   As Principal, the readiness report lists the reply.
+
+I walked through this in headless Edge at 1440x900 and at 390px. The only browser console entry is the 422 the
+server returns for a deliberately wrong OTP code. The browser logs that as a failed request; the page handles
+it with an inline error. I re-seeded afterwards.
+
+### Decisions taken (ambiguities)
+- **Status thresholds:** blocked means any high-severity or held issue (those are the ones that make UDISE+
+  reject a record, or that need a human decision). On fresh data all three schools are blocked; they change
+  as people act. I did not invent pre-made decisions in the seed, because they would be fake audit history.
+  The Phase 7 screenshot script will reach the "ready, fixing, blocked" mix through real actions.
+- **The mock OTP code is shown on screen.** It is derived from the student ID and the pinned date, and is
+  not secret. It is a demo of the flow, not authentication. Comments that look like an ID number are refused.
+- **A parent's reply never edits the record.** It is a message to staff, kept in the audit log.
+- **The school list is visible to every signed-in role.** It holds only synthetic school names, needed by
+  the picker.
+- **Admin also sees the cluster grid.** All clusters; there is only CL-01.
+
+### Known gaps
+- Tooltips appear on hover and keyboard focus. On touch screens, tap the tile; the drill-in lists the reasons.
+- Staff read parent replies only in the readiness report. There is no inbox or per-issue link yet.
+- Teachers can't pick which of their classes to show; they see all of them (a handful each in the seed).
+- Extra features 1 to 10 haven't started. Next is Phase 7 (landing page and screenshots); the extras come
+  after, if time allows.

@@ -107,7 +107,7 @@ export function Dashboard() {
     },
   ];
 
-  const title = { teacher: "My classes", student_parent: "My record", admin: "All issues" }[me.role as string] ?? "Dashboard";
+  const title = { teacher: "Issue list", mis_coordinator: "Issue list", admin: "All issues" }[me.role as string] ?? "Dashboard";
   const readiness = overallReadiness(schools);
   const students = schools.reduce((a, s) => a + s.students, 0);
 

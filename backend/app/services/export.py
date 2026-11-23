@@ -66,6 +66,15 @@ def _decisions(s: Session, code: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _parent_replies(s: Session, code: str) -> list[dict[str, Any]]:
+    out = []
+    for e in s.exec(select(m.AuditEntry).where(m.AuditEntry.action.startswith("parent.")).order_by(m.AuditEntry.id)):  # type: ignore[attr-defined]
+        p = json.loads(e.payload or "{}")
+        if p.get("school_code") == code:
+            out.append({"ts": e.ts, "record": e.record_ref, "outcome": p.get("outcome"), "comment": p.get("comment") or ""})
+    return out
+
+
 def report_data(s: Session, code: str, rules) -> dict[str, Any]:
     school = s.get(m.School, code)
     issues = list(s.exec(select(m.Issue).where(m.Issue.school_code == code)))
@@ -81,6 +90,7 @@ def report_data(s: Session, code: str, rules) -> dict[str, Any]:
         "held": [i for i in issues if i.status == "held"],
         "open_by_rule": Counter(i.rule_id for i in issues if i.status == "open"),
         "decisions": _decisions(s, code),
+        "parents": _parent_replies(s, code),
         "rules": {r.id: r.version for r in rules},
         "chain_ok": chain.ok,
         "chain_rows": chain.checked,
@@ -109,6 +119,11 @@ def report_html(s: Session, code: str, rules, actor: str) -> str:
     ) or '<tr><td colspan="6" class="muted">No decisions recorded yet.</td></tr>'
     open_rows = "".join(f"<li><b>{e(r)}</b>: {n}</li>" for r, n in sorted(d["open_by_rule"].items())) \
         or "<li>None</li>"
+    parent_rows = "".join(
+        f"<tr><td>{e(x['ts'][:16].replace('T', ' '))}</td><td>{e(x['record'])}</td>"
+        f"<td>{'Details correct' if x['outcome'] == 'correct' else '<b>Asked for a change</b>'}</td><td>{e(x['comment'])}</td></tr>"
+        for x in d["parents"]
+    ) or '<tr><td colspan="4" class="muted">No parent replies yet.</td></tr>'
     rules = ", ".join(f"{e(k)} v{e(v)}" for k, v in sorted(d["rules"].items()))
     chain = (f'<span class="ok">Verified: {d["chain_rows"]} audit rows, chain intact</span>' if d["chain_ok"]
              else '<span class="bad">Audit chain is BROKEN. Do not submit until an admin investigates.</span>')
@@ -159,6 +174,8 @@ def report_html(s: Session, code: str, rules, actor: str) -> str:
   <h2>Still open, by rule</h2><ul>{open_rows}</ul>
   <h2>Decisions (who approved what)</h2>
   <table><thead><tr><th>Time (UTC)</th><th>By</th><th>Action</th><th>Rule</th><th>Record</th><th>Change</th></tr></thead><tbody>{dec_rows}</tbody></table>
+  <h2>Parent confirmations (mock OTP flow)</h2>
+  <table><thead><tr><th>Time (UTC)</th><th>Record</th><th>Reply</th><th>Comment</th></tr></thead><tbody>{parent_rows}</tbody></table>
   <h2>Rules used</h2><p class="muted">{rules}</p>
   <div class="notice">{e(SYNTHETIC_NOTICE)} Nothing is submitted to UDISE+ by Rsafe; a person uploads the file.</div>
 </main></body></html>"""

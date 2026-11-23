@@ -19,6 +19,7 @@ from .routes import issues as issue_routes
 from .routes import rules as rules_routes
 from .routes import session as session_routes
 from .routes import upload as upload_routes
+from .routes import views as view_routes
 from .services.rules import load_rules
 
 
@@ -62,6 +63,7 @@ app.include_router(audit_routes.router)
 app.include_router(rules_routes.router)
 app.include_router(upload_routes.router)
 app.include_router(export_routes.router)
+app.include_router(view_routes.router)
 
 
 @app.get("/api/health")

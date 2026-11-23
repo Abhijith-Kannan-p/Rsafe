@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { GlassCard, ReadinessRing, useToast } from "../../components";
 import { ErrorNote, Loading, PageHeader, Select, Stat } from "../../components/ui";
 import { qs, type SchoolSummary } from "../../lib/api";
@@ -15,7 +16,8 @@ export function Export() {
   const toast = useToast();
   const summary = useApi<{ schools: SchoolSummary[] }>("/summary");
   const schools = summary.data?.schools ?? [];
-  const [picked, setPicked] = useState("");
+  const [params] = useSearchParams();
+  const [picked, setPicked] = useState(params.get("school") ?? "");
   const school = schools.find((s) => s.school_code === picked) ?? schools[0];
   const q = qs({ school_code: school?.school_code });
 
