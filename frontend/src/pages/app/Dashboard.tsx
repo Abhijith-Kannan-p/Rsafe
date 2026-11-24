@@ -12,6 +12,12 @@ import { useApi } from "../../lib/useApi";
 
 const ACTIVE = "active";
 
+/** Who decided an issue, as a role name ("Teacher", "Principal"). Empty when nobody has acted yet. */
+function decidedBy(i: Issue): string {
+  if (!i.acted_by || !["approved", "edited", "held"].includes(i.status)) return "";
+  return i.acted_by.replace(/^Demo\s+/, "").replace(/\s*\(.*\)\s*$/, "") || i.acted_by;
+}
+
 export function Dashboard() {
   const me = useIdentity();
   const toast = useToast();
@@ -109,8 +115,16 @@ export function Dashboard() {
     {
       key: "status",
       header: "Status",
-      render: (i) => <StatusPill status={i.status === "resolved" ? "verified" : i.status} label={i.status === "resolved" ? "Resolved" : undefined} />,
-      sortValue: (i) => i.status,
+      render: (i) => {
+        const by = decidedBy(i);
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <StatusPill status={i.status === "resolved" ? "verified" : i.status} label={i.status === "resolved" ? "Resolved" : undefined} />
+            {by && <span className="whitespace-nowrap text-xs text-mist" title={i.acted_by ?? undefined}>by {by}</span>}
+          </div>
+        );
+      },
+      sortValue: (i) => `${i.status} ${decidedBy(i)}`,
     },
   ];
 
@@ -238,7 +252,7 @@ export function Dashboard() {
             <option value="all">Everything</option>
             <option value="open">Open</option>
             <option value="held">Held</option>
-            <option value="approved">Approved</option>
+            <option value="approved">Approved or confirmed</option>
             <option value="edited">Edited</option>
             <option value="resolved">Resolved</option>
           </Select>

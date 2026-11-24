@@ -754,3 +754,19 @@ My checks on the built image (330 MB, built in about 74 s):
 ### Known gaps
 - On a free tier the first visit after idle is slow, and decisions made on the live site disappear
   when it restarts.
+
+## Checkpoint: decisions show who made them
+
+A teacher's "Confirm record is right" shows as **Approved**, which made it look missing to a principal
+who checked the "Edited" filter.
+
+- The issue list's Status filter option "Approved" is now **"Approved or confirmed"**.
+- Each decided issue (approved, edited, held) shows **"by Teacher"** or **"by Principal"** under its
+  status. Hovering shows the full actor, for example "Demo Teacher (SYN-0002-T01)".
+
+### How to verify
+As Teacher, open an issue with no suggestion and press **Confirm record is right**. Switch to
+Principal and set Status to **Approved or confirmed**: the row reads "Approved, by Teacher".
+
+### Decisions taken (ambiguities)
+- The role shown comes from the stored actor name, so no backend or database change was needed.
