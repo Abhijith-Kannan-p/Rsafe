@@ -277,6 +277,15 @@ only through Edit or Approve on an issue. The parent then sees that the school h
 report shows who handled each request (`GET /api/parent-requests`,
 `POST /api/parent-requests/{id}/handled`).
 
+**Recent changes.** The Dashboard (Principal, MIS) lists the latest decisions on issues straight from the
+audit log, so a principal sees what teachers changed without opening the report. Each entry shows:
+- who decided, with a count of decisions made by teachers
+- what they did: approved, confirmed, edited, held or rejected a suggestion
+- the student, and the old and new value
+- the note, and when
+
+Clicking an entry opens the issue (`GET /api/decisions`).
+
 The issue list's Status column also shows who decided each issue ("by Teacher", "by Principal"). Its
 Status filter has five options:
 - **Needs action:** open and held issues. This is the default.
@@ -334,7 +343,7 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - An expired session returns you to the role picker.
 - A screen that fails to render shows a recovery card while the navigation stays usable.
 
-**Tests:** 253 pytest tests:
+**Tests:** 255 pytest tests:
 - every rule, with good and bad records, plus ground truth on the seed
 - smart suggestions: register values, swapped dates, and never guessing without evidence
 - token privacy
@@ -343,6 +352,7 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - upload, export and views
 - the extras: reset, test submit, trend, coverage, search scope, translations in sync with the rules,
   metrics without personal data, reject suggestion, the report's audit summary
+- recent decisions on the dashboard: scope, roles, old and new values
 - parent requests: who sees them, scope, marking handled once, and that the record never changes
 
 ## Future work

@@ -79,6 +79,50 @@ def trend(school_code: Optional[str] = None, who: Identity = Depends(require(*OV
     return {"school_code": code, "points": points}
 
 
+# ------------------------------------------------------------------ recent decisions
+
+DECISIONS = ("issue.approve", "issue.confirm", "issue.edit", "issue.hold", "issue.reject_suggestion")
+
+
+@router.get("/decisions")
+def decisions(school_code: Optional[str] = None, limit: int = Query(default=10, ge=1, le=50),
+              who: Identity = Depends(require(Role.PRINCIPAL, Role.MIS_COORDINATOR)),
+              s: Session = Depends(get_session)) -> dict:
+    """The latest decisions people made on issues (approve, confirm, edit, hold, reject a suggestion),
+    newest first, read from the audit log. Lets a principal see what teachers changed without the report."""
+    schools = set(scope.visible_schools(s, who))
+    if school_code:
+        if school_code not in schools:
+            raise HTTPException(404, "School not found.")
+        schools = {school_code}
+    rows = s.exec(select(m.AuditEntry).where(col(m.AuditEntry.action).in_(DECISIONS)).order_by(m.AuditEntry.id.desc()))
+    out: list[dict[str, Any]] = []
+    by_teacher = 0
+    for e in rows:
+        p = json.loads(e.payload or "{}")
+        if p.get("school_code") not in schools:
+            continue
+        by_teacher += e.role == Role.TEACHER.value
+        if len(out) >= limit:
+            continue
+        entity, _, ref = e.record_ref.partition(":")
+        name = ""
+        if entity == "student":
+            st = s.exec(select(m.Student).where(m.Student.student_ref == ref)).first()
+            name = st.name if st else ""
+        elif entity == "teacher":
+            t = s.exec(select(m.Teacher).where(m.Teacher.teacher_ref == ref)).first()
+            name = t.name if t else ""
+        out.append({
+            "audit_id": e.id, "ts": e.ts, "actor": e.actor, "role": e.role, "action": e.action.split(".", 1)[1],
+            "issue_id": p.get("issue_id"), "rule_id": p.get("rule_id"), "school_code": p.get("school_code"),
+            "entity": entity, "record": ref, "name": name, "field": p.get("field"),
+            "old": p.get("old"), "new": p.get("new"), "rejected_value": p.get("rejected_value"),
+            "note": p.get("note") or "",
+        })
+    return {"decisions": out, "by_teacher": by_teacher}
+
+
 # ------------------------------------------------------------------ rule coverage
 
 @router.get("/coverage")

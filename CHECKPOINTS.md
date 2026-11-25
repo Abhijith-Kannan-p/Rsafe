@@ -834,3 +834,36 @@ seeded SYN-0002), with no console errors.
 ### Decisions taken (ambiguities)
 - "Open" on its own was dropped. Needs action already shows it, and only held issues differ, which have
   their own option.
+
+## Checkpoint: recent changes on the dashboard
+
+A teacher's decisions reached the principal only through the Status filter or the printed report. The
+Dashboard (Principal, MIS) now has a **Recent changes** panel showing the latest 8 decisions on issues,
+read from the audit log:
+- who decided, with a "N by teachers" count
+- what they did: approved the fix, confirmed the record, edited, held, or rejected a suggestion
+- the student's name and ID, and the rule
+- the old and new value, and the note
+- when
+
+Clicking an entry opens that issue. **See all decided issues** switches the list to "Decided by a
+person".
+
+- **API:** `GET /api/decisions?school_code=&limit=` (principal, MIS), scoped to the schools the caller
+  can see.
+
+### How to verify
+```
+npm run test    # 255 passed
+```
+As Teacher, approve Ananya's name on My classes. As Principal, the Dashboard shows:
+
+    Teacher (SYN-0002-T01) approved the fix · Ananya R. Kumar · name: "Ananya Kumar" → "Ananya R. Kumar"
+
+I checked this in Edge at 1440 px and 390 px with no console errors, and the guided tour still runs
+10/10.
+
+### Decisions taken (ambiguities)
+- The panel shows everyone's decisions, not only teachers'. That way a principal sees the full sequence;
+  teachers' entries are tinted violet and counted.
+- The panel is hidden until someone has made a decision, so a freshly seeded demo looks as before.

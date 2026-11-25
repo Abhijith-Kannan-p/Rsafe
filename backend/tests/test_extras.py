@@ -171,3 +171,36 @@ def test_report_has_audit_summary(client, seeded_db):
     assert "Audit summary" in html and "Head hash" in html
     assert re.search(r"Readiness went from <b>\d+%</b> at the first validation to <b>\d+%</b>", html)
     assert "Demo Principal (SYN-0002)" in html and "1 fixes approved" in html
+
+
+# ------------------------------------------------------------------ recent decisions
+
+def test_principal_sees_teachers_change_on_dashboard(client, seeded_db):
+    login(client, "teacher", "SYN-0002")
+    issue = _ananya(client)
+    assert client.post(f"/api/issues/{issue['id']}/approve", json={"note": "matches register"}).status_code == 200
+    login(client, "principal", "SYN-0002")
+    d = client.get("/api/decisions").json()
+    top = d["decisions"][0]
+    assert d["by_teacher"] == 1
+    assert top["role"] == "teacher" and top["action"] == "approve" and top["issue_id"] == issue["id"]
+    assert top["name"] == "Ananya R. Kumar" and top["old"] == "Ananya Kumar" and top["new"] == "Ananya R. Kumar"
+    assert top["field"] == "name" and top["note"] == "matches register"
+    # the MIS coordinator sees it too; another school's principal does not
+    login(client, "mis_coordinator")
+    assert any(x["audit_id"] == top["audit_id"] for x in client.get("/api/decisions").json()["decisions"])
+    assert client.get("/api/decisions", params={"school_code": "SYN-0001"}).json()["decisions"] == []
+    login(client, "principal", "SYN-0001")
+    assert client.get("/api/decisions").json() == {"decisions": [], "by_teacher": 0}
+    assert client.get("/api/decisions", params={"school_code": "SYN-0002"}).status_code == 404
+
+
+def test_decisions_roles_and_limit(client, seeded_db):
+    for role in ("teacher", "admin", "student_parent"):
+        login(client, role)
+        assert client.get("/api/decisions").status_code == 403
+    login(client, "principal", "SYN-0002")
+    for i in [x for x in client.get("/api/issues").json() if x["status"] == "open"][:3]:
+        client.post(f"/api/issues/{i['id']}/approve", json={})
+    d = client.get("/api/decisions", params={"limit": 2}).json()["decisions"]
+    assert len(d) == 2 and d[0]["audit_id"] > d[1]["audit_id"]

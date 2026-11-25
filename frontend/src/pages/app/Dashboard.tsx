@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, GlassCard, ReadinessRing, SeverityBadge, StatusPill, useToast, type Column } from "../../components";
 import { IssuePanel } from "../../components/IssuePanel";
 import { ParentRequests } from "../../components/ParentRequests";
+import { RecentChanges } from "../../components/RecentChanges";
 import { ErrorNote, Loading, PageHeader, Select, Stat } from "../../components/ui";
 import { TrendChart } from "../../components/TrendChart";
 import { overallReadiness, post, qs, type Issue, type SchoolSummary, type TrendPoint } from "../../lib/api";
@@ -203,7 +204,20 @@ export function Dashboard() {
       )}
 
       {(me.role === "principal" || me.role === "mis_coordinator") && (
-        <ParentRequests refreshKey={all.data} showSchool={multiSchool} onOpen={(id) => setFilter("issue", String(id))} />
+        <>
+          <ParentRequests refreshKey={all.data} showSchool={multiSchool} onOpen={(id) => setFilter("issue", String(id))} />
+          <RecentChanges
+            key={filters.school_code}
+            schoolCode={filters.school_code}
+            refreshKey={all.data}
+            showSchool={multiSchool}
+            onOpen={(id) => setFilter("issue", String(id))}
+            onSeeAll={() => {
+              setFilter("status", DECIDED);
+              document.querySelector("[data-tour=issues]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+        </>
       )}
 
       {held.length > 0 && (
