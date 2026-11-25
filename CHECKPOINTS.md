@@ -867,3 +867,10 @@ I checked this in Edge at 1440 px and 390 px with no console errors, and the gui
 - The panel shows everyone's decisions, not only teachers'. That way a principal sees the full sequence;
   teachers' entries are tinted violet and counted.
 - The panel is hidden until someone has made a decision, so a freshly seeded demo looks as before.
+
+## Checkpoint: logo goes to the landing page
+
+The Rsafe logo in the sidebar now links to the landing page (`/`). It used to link to the role's home
+screen. You stay signed in, and **Enter Rsafe** or the browser's Back button returns you to the app.
+I checked in Edge: clicking the logo from My classes opens the landing page, Back returns to My classes,
+and there are no console errors.

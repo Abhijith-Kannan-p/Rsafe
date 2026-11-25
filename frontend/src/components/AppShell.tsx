@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ROLE_LABEL, type Role, type SchoolOption, type SchoolSummary } from "../lib/api";
 import { cn } from "../lib/cn";
 import { can, HOME, useSession } from "../lib/session";
@@ -177,10 +177,11 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside className="glass sticky top-4 m-4 hidden h-[calc(100vh-2rem)] w-60 shrink-0 flex-col p-4 md:flex" aria-label="Main">
-        <NavLink to={HOME[identity.role]} className="mb-6 flex items-center gap-2 px-2 pt-1 focus-visible:outline-2 focus-visible:outline-saffron">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-saffron font-display text-lg font-bold text-ink">R</span>
+        <Link to="/" title="Back to the landing page" className="mb-6 flex items-center gap-2 px-2 pt-1 focus-visible:outline-2 focus-visible:outline-saffron">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-saffron font-display text-lg font-bold text-ink" aria-hidden>R</span>
           <span className="font-display text-xl font-bold text-cream">Rsafe</span>
-        </NavLink>
+          <span className="sr-only">: landing page</span>
+        </Link>
         <nav className="flex flex-col gap-1" aria-label="Sections">
           <NavLinks items={NAV[identity.role]} />
         </nav>
