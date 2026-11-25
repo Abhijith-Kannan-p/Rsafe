@@ -225,7 +225,20 @@ export type MyClasses = {
   own_issues: IssueBrief[];
 };
 
-export type Confirmation = { ts: string; outcome: "correct" | "needs_change"; comment: string; audit_id: number };
+export type Handled = { ts: string; actor: string; note: string; audit_id: number };
+export type Confirmation = { ts: string; outcome: "correct" | "needs_change"; comment: string; audit_id: number; handled?: Handled | null };
+export type ParentRequest = {
+  id: number;
+  ts: string;
+  student_ref: string;
+  school_code: string;
+  name: string;
+  class: string;
+  comment: string;
+  handled: Handled | null;
+  issues: IssueBrief[];
+};
+export type ParentRequests = { requests: ParentRequest[]; pending: number; can_handle: boolean };
 export type MyRecord = {
   student: {
     student_ref: string;

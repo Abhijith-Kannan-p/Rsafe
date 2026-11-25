@@ -156,7 +156,8 @@ def _latest_confirmation(s: Session, ref: str) -> dict | None:
     if e is None:
         return None
     p = json.loads(e.payload or "{}")
-    return {"ts": e.ts, "outcome": p.get("outcome"), "comment": p.get("comment", ""), "audit_id": e.id}
+    return {"ts": e.ts, "outcome": p.get("outcome"), "comment": p.get("comment", ""), "audit_id": e.id,
+            "handled": handled_requests(s).get(e.id)}
 
 
 @router.get("/my/record")
@@ -206,3 +207,78 @@ def confirm(body: ConfirmBody, who: Identity = Depends(require(Role.STUDENT_PARE
         "school_code": st.school_code, "outcome": body.outcome, "comment": body.comment, "mock_otp": True,
     })
     return {"audit_id": entry.id, "confirmation": _latest_confirmation(s, st.student_ref)}
+
+
+# ------------------------------------------------------------------ parent change requests
+# A parent's "Something is wrong" reply (audit action parent.report) reaches the principal and the
+# teachers of that child's class. Marking one handled writes request.handled to the audit log; it
+# never changes the record. The record still changes only through an issue's Edit or Approve.
+
+HANDLED = "request.handled"
+
+
+def handled_requests(s: Session) -> dict[int, dict]:
+    """request audit id -> who marked it handled, when, and their note."""
+    out: dict[int, dict] = {}
+    for e in s.exec(select(m.AuditEntry).where(m.AuditEntry.action == HANDLED).order_by(m.AuditEntry.id)):
+        p = json.loads(e.payload or "{}")
+        if isinstance(p.get("request_id"), int):
+            out.setdefault(p["request_id"], {"ts": e.ts, "actor": e.actor, "note": p.get("note") or "",
+                                             "audit_id": e.id})
+    return out
+
+
+def _visible_request(s: Session, who: Identity, e: m.AuditEntry) -> bool:
+    p = json.loads(e.payload or "{}")
+    if p.get("school_code") not in scope.visible_schools(s, who):
+        return False
+    refs = scope.visible_student_refs(s, who)
+    return refs is None or e.record_ref.removeprefix("student:") in refs
+
+
+STAFF_READ = (Role.PRINCIPAL, Role.TEACHER, Role.MIS_COORDINATOR)
+
+
+@router.get("/parent-requests")
+def parent_requests(who: Identity = Depends(require(*STAFF_READ)), s: Session = Depends(get_session)) -> dict:
+    """Parents' change requests the signed-in person may see, newest first, each with the child's issues."""
+    handled = handled_requests(s)
+    out = []
+    for e in s.exec(select(m.AuditEntry).where(m.AuditEntry.action == "parent.report").order_by(m.AuditEntry.id.desc())):
+        if not _visible_request(s, who, e):
+            continue
+        ref = e.record_ref.removeprefix("student:")
+        p = json.loads(e.payload or "{}")
+        st = s.exec(select(m.Student).where(m.Student.student_ref == ref)).first()
+        issues = sorted(s.exec(select(m.Issue).where(m.Issue.entity == "student", m.Issue.entity_ref == ref)),
+                        key=lambda i: (i.status not in ACTIVE, SEV_ORDER[i.severity], i.id))
+        out.append({
+            "id": e.id, "ts": e.ts, "student_ref": ref, "school_code": p.get("school_code"),
+            "name": st.name if st else "", "class": f"{st.class_grade}{st.section}" if st else "",
+            "comment": p.get("comment") or "", "handled": handled.get(e.id),
+            "issues": [_issue_brief(i) for i in issues],
+        })
+    return {"requests": out, "pending": sum(r["handled"] is None for r in out),
+            "can_handle": who.role in (Role.PRINCIPAL, Role.TEACHER)}
+
+
+class HandledBody(BaseModel):
+    note: str = Field(default="", max_length=300)
+
+
+@router.post("/parent-requests/{request_id}/handled")
+def mark_handled(request_id: int, body: HandledBody,
+                 who: Identity = Depends(require(Role.PRINCIPAL, Role.TEACHER)),
+                 s: Session = Depends(get_session)) -> dict:
+    e = s.get(m.AuditEntry, request_id)
+    if e is None or e.action != "parent.report" or not _visible_request(s, who, e):
+        raise HTTPException(404, "No such parent request in your scope.")
+    if request_id in handled_requests(s):
+        raise HTTPException(409, "This request is already marked as handled.")
+    if ID_LIKE.search(body.note):
+        raise HTTPException(422, "Notes are kept forever, so they must not contain ID numbers.")
+    p = json.loads(e.payload or "{}")
+    entry = audit.append(s, who.actor, who.role.value, HANDLED, e.record_ref, {
+        "school_code": p.get("school_code"), "request_id": request_id, "note": body.note.strip(),
+    })
+    return {"audit_id": entry.id, "handled": handled_requests(s)[request_id]}

@@ -770,3 +770,43 @@ Principal and set Status to **Approved or confirmed**: the row reads "Approved, 
 
 ### Decisions taken (ambiguities)
 - The role shown comes from the stored actor name, so no backend or database change was needed.
+
+## Checkpoint: parent requests panel
+
+A parent's "Something is wrong" reply used to reach staff only through the printed report. Now it shows
+in a **Parent requests** panel:
+- **Principal:** on the Dashboard.
+- **Teacher:** on My classes, only for students they teach.
+- **MIS Coordinator:** on the Dashboard, read-only.
+
+Each request shows the child, the comment, when it was sent and the child's issues as chips that open
+the issue panel.
+
+**Mark as handled** (principal or teacher) takes an optional note. Notes that look like ID numbers are
+refused. It writes `request.handled` to the audit log, can be done only once, and never changes the
+record. The parent's My record then says the school handled it, and the report shows "Handled by …" or
+"Not handled yet" for each request.
+
+- **API:** `GET /api/parent-requests` (principal, teacher, MIS) and
+  `POST /api/parent-requests/{id}/handled` (principal, teacher).
+- **Seed:** teacher SYN-0002-T01 now also teaches Mathematics in class 5B, the class of the demo parent's
+  child. Before this, no teacher taught 5B, so no teacher could ever see the demo request. The added row
+  uses no randomness, so every other generated value is unchanged.
+
+### How to verify
+```
+npm run test    # 253 passed
+```
+In the browser:
+1. As Student and Parent, choose **Something is wrong**, type a comment and verify the code.
+2. As Principal, the Dashboard shows the request. Click the STU-005 chip to open the issue.
+3. As Teacher, My classes shows the same request. Press **Mark as handled**.
+4. As Student and Parent, the page says the school handled it.
+
+I checked this in Edge at 1440 px and 390 px (no horizontal scroll, no console errors), and the guided
+tour still runs 10/10.
+
+### Decisions taken (ambiguities)
+- "Handled" is a staff acknowledgement, not a fix. Fixes still go through issues, so a request on a
+  record with no Rsafe issue says to correct it in the school's own system and import again.
+- Admin does not get the panel. Admin sees the same events in the audit log.

@@ -212,9 +212,15 @@ export function MyRecord() {
       </div>
 
       {last && (
-        <p className="mt-4 flex items-center gap-2 text-sm text-mist">
+        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-mist">
           <MessageSquareWarning className="h-4 w-4 text-violet" aria-hidden />
           Last reply: {last.outcome === "correct" ? "details confirmed" : `asked for a change ("${last.comment}")`} on {formatTime(last.ts)}.
+          {last.outcome === "needs_change" &&
+            (last.handled ? (
+              <span className="text-aqua">The school marked it as handled on {formatTime(last.handled.ts)}.</span>
+            ) : (
+              <span>The school has not handled it yet.</span>
+            ))}
         </p>
       )}
 

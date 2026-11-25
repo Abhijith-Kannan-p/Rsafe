@@ -141,3 +141,71 @@ def test_demo_parent_keeps_the_same_child_after_the_name_fix(client, seeded_db):
     login(client, "student_parent")
     rec = client.get("/api/my/record").json()
     assert rec["student"]["student_ref"] == before and rec["student"]["name"] == "Ananya R. Kumar"
+
+
+# ---------------------------------------------------------------- parent change requests
+
+def _send_request(client, comment="Name should be Ananya R. Kumar"):
+    me = login(client, "student_parent")
+    r = client.post("/api/my/confirm", json={"code": mock_code(me["student_ref"]), "outcome": "needs_change",
+                                             "comment": comment})
+    assert r.status_code == 200, r.text
+    return me, r.json()["audit_id"]
+
+
+def test_parent_request_reaches_principal_and_childs_teacher(client, seeded_db):
+    me, rid = _send_request(client)
+    for role in ("principal", "teacher"):
+        login(client, role, me["school_code"])
+        d = client.get("/api/parent-requests").json()
+        req = next(r for r in d["requests"] if r["id"] == rid)
+        assert req["student_ref"] == me["student_ref"] and req["comment"].startswith("Name should")
+        assert req["handled"] is None and d["pending"] >= 1 and d["can_handle"]
+        assert req["issues"] and req["name"] and req["class"]
+    login(client, "mis_coordinator")
+    d = client.get("/api/parent-requests").json()
+    assert any(r["id"] == rid for r in d["requests"]) and not d["can_handle"]
+
+
+def test_parent_request_hidden_outside_scope(client, seeded_db):
+    me, rid = _send_request(client)
+    other = "SYN-0001" if me["school_code"] != "SYN-0001" else "SYN-0003"
+    for role in ("principal", "teacher"):
+        login(client, role, other)
+        assert all(r["id"] != rid for r in client.get("/api/parent-requests").json()["requests"])
+        assert client.post(f"/api/parent-requests/{rid}/handled", json={}).status_code == 404
+    for role in ("admin", "student_parent"):
+        login(client, role)
+        assert client.get("/api/parent-requests").status_code == 403
+
+
+def test_mark_handled_is_audited_once_and_changes_nothing(client, seeded_db, db):
+    me, rid = _send_request(client)
+    before = db.exec(select(Student).where(Student.student_ref == me["student_ref"])).one().model_dump()
+    login(client, "mis_coordinator")
+    assert client.post(f"/api/parent-requests/{rid}/handled", json={}).status_code == 403
+    login(client, "teacher", me["school_code"])
+    assert client.post(f"/api/parent-requests/{rid}/handled", json={"note": "id 0123 4567 8901"}).status_code == 422
+    r = client.post(f"/api/parent-requests/{rid}/handled", json={"note": "Checked the birth certificate"})
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    e = db.get(AuditEntry, r.json()["audit_id"])
+    assert e.action == "request.handled" and e.record_ref == f"student:{me['student_ref']}"
+    assert db.exec(select(Student).where(Student.student_ref == me["student_ref"])).one().model_dump() == before
+    login(client, "principal", me["school_code"])
+    assert client.post(f"/api/parent-requests/{rid}/handled", json={}).status_code == 409
+    req = next(x for x in client.get("/api/parent-requests").json()["requests"] if x["id"] == rid)
+    assert req["handled"]["note"] == "Checked the birth certificate" and "Teacher" in req["handled"]["actor"]
+    assert "Handled by Demo Teacher" in client.get("/api/export/report").text
+    # the parent sees that the school dealt with it, and their reply is still the latest one
+    login(client, "student_parent")
+    conf = client.get("/api/my/record").json()["confirmation"]
+    assert conf["audit_id"] == rid and conf["handled"]["ts"]
+
+
+def test_only_change_requests_are_listed(client, seeded_db):
+    me = login(client, "student_parent")
+    client.post("/api/my/confirm", json={"code": mock_code(me["student_ref"]), "outcome": "correct"})
+    login(client, "principal", me["school_code"])
+    assert client.get("/api/parent-requests").json()["requests"] == []
+    assert client.post("/api/parent-requests/1/handled", json={}).status_code == 404

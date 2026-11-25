@@ -363,6 +363,15 @@ class Generator:
         ds.injected.append(Injection("TCH-001", "teacher", "SYN-0002", t["teacher_ref"],
                                      "qualified in Mathematics, assigned Hindi for class 7A"))
 
+        # T01 also teaches Mathematics in the demo parent's child's class, so a parent's change
+        # request reaches the demo teacher. Uses no randomness, so the rest of the data is unchanged.
+        child = next((x for x in ds.students if x["school_code"] == "SYN-0002" and x["name"] == "Ananya Kumar"), None)
+        if child and not any(a["teacher_ref"] == t["teacher_ref"] and (int(a["class_grade"]), a["section"])
+                             == (int(child["class_grade"]), child["section"]) for a in ds.teacher_assignments):
+            ds.teacher_assignments.append({"teacher_ref": t["teacher_ref"], "school_code": "SYN-0002",
+                                           "class_grade": child["class_grade"], "section": child["section"],
+                                           "subject": "Mathematics"})
+
         # FAC-001: girls' toilet marked functional, latest maintenance entry says broken
         ref = "SYN-0002-F-toilet_girls"
         for f in ds.facilities:

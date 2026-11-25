@@ -265,13 +265,29 @@ All ten optional features from the brief are built, tested and checked in the br
 | 9 | Rule coverage | **Coverage** (Principal, MIS, Admin) | Groups the rules by the government failure reason each addresses, with what each has found, fixed and cleared. |
 | 10 | Health and metrics | `GET /api/metrics`; Admin **System** | Timing for every validation run (read, rules, store, total, per 1,000 records), counts and rule versions. Public like `/api/health`, with no names or IDs. |
 
+**Parent requests.** When a parent presses **Something is wrong** on My record, the request appears in a
+**Parent requests** panel:
+- **Principal:** on the Dashboard.
+- **Teacher:** on My classes, but only for the students they teach.
+- **MIS Coordinator:** on the Dashboard, read-only.
+
+Each request shows the comment and the child's issues; clicking an issue opens it to fix. **Mark as
+handled** writes `request.handled` to the audit log and never changes the record. The record changes
+only through Edit or Approve on an issue. The parent then sees that the school handled it, and the
+report shows who handled each request (`GET /api/parent-requests`,
+`POST /api/parent-requests/{id}/handled`).
+
+The issue list's Status column also shows who decided each issue ("by Teacher", "by Principal"), and its
+filter lists confirmations under **Approved or confirmed**.
+
 ## What is mocked
 
 - **Data:** all of it is synthetic. The generator ([backend/seed.py](backend/seed.py)) uses a fixed seed and
   injects a known list of problems (`backend/data/injected.json`). Synthetic ID numbers start with 0.
 - **Sign-in:** a demo role picker, not real authentication. Identities are fixed synthetic people.
 - **Parent confirmation:** a mockup. The 6-digit code is shown on screen and no SMS is sent. The reply is
-  saved to the audit log and never changes the record.
+  saved to the audit log and never changes the record. Staff see change requests in the Parent requests
+  panel.
 - **UDISE+:** not contacted. Export produces files a person would upload by hand.
 - **"Today":** pinned to 16 Nov 2026 (`RSAFE_TODAY`), so date-based rules give the same results on any day.
 - **Translations:** the Hindi and Malayalam texts are machine translations and have not been reviewed by a
@@ -313,7 +329,7 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - An expired session returns you to the role picker.
 - A screen that fails to render shows a recovery card while the navigation stays usable.
 
-**Tests:** 246 pytest tests:
+**Tests:** 253 pytest tests:
 - every rule, with good and bad records, plus ground truth on the seed
 - smart suggestions: register values, swapped dates, and never guessing without evidence
 - token privacy
@@ -322,11 +338,12 @@ the server deliberately returns, for example to a wrong parent OTP code.
 - upload, export and views
 - the extras: reset, test submit, trend, coverage, search scope, translations in sync with the rules,
   metrics without personal data, reject suggestion, the report's audit summary
+- parent requests: who sees them, scope, marking handled once, and that the record never changes
 
 ## Future work
 
 - Real sign-in (school SSO) instead of demo roles, with keys held per school on separate machines.
-- A real consent and confirmation channel for parents (SMS or app), and a staff inbox for their replies.
+- A real consent and confirmation channel for parents (SMS or app), with replies back to the parent.
 - Matching across clusters, through a privacy-preserving service that holds no school keys.
 - More rules: teacher qualifications against posts, enrolment trends, infrastructure photos.
 - Have fluent speakers review the Hindi and Malayalam texts, and translate the rest of the interface.

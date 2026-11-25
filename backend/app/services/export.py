@@ -67,11 +67,17 @@ def _decisions(s: Session, code: str) -> list[dict[str, Any]]:
 
 
 def _parent_replies(s: Session, code: str) -> list[dict[str, Any]]:
+    handled: dict[int, str] = {}
+    for e in s.exec(select(m.AuditEntry).where(m.AuditEntry.action == "request.handled").order_by(m.AuditEntry.id)):
+        rid = json.loads(e.payload or "{}").get("request_id")
+        if isinstance(rid, int):
+            handled.setdefault(rid, e.actor)
     out = []
     for e in s.exec(select(m.AuditEntry).where(m.AuditEntry.action.startswith("parent.")).order_by(m.AuditEntry.id)):  # type: ignore[attr-defined]
         p = json.loads(e.payload or "{}")
         if p.get("school_code") == code:
-            out.append({"ts": e.ts, "record": e.record_ref, "outcome": p.get("outcome"), "comment": p.get("comment") or ""})
+            out.append({"ts": e.ts, "record": e.record_ref, "outcome": p.get("outcome"), "comment": p.get("comment") or "",
+                        "handled_by": handled.get(e.id or 0)})
     return out
 
 
@@ -80,6 +86,7 @@ ACTION_LABEL = {
     "issue.hold": "issues held", "issue.reject_suggestion": "suggestions rejected", "data.import": "files imported",
     "validation.run": "validation runs", "export.csv": "CSV exports", "export.report": "reports opened",
     "submit.dry_run": "test submits", "parent.confirm": "parent confirmations", "parent.report": "parent change requests",
+    "request.handled": "parent requests handled",
 }
 
 
@@ -156,7 +163,10 @@ def report_html(s: Session, code: str, rules, actor: str) -> str:
         or "<li>None</li>"
     parent_rows = "".join(
         f"<tr><td>{e(x['ts'][:16].replace('T', ' '))}</td><td>{e(x['record'])}</td>"
-        f"<td>{'Details correct' if x['outcome'] == 'correct' else '<b>Asked for a change</b>'}</td><td>{e(x['comment'])}</td></tr>"
+        f"<td>{'Details correct' if x['outcome'] == 'correct' else '<b>Asked for a change</b>'}"
+        f"{'<br><span class=muted>Handled by ' + e(x['handled_by']) + '</span>' if x.get('handled_by') else ''}"
+        f"{'<br><span class=muted>Not handled yet</span>' if x['outcome'] != 'correct' and not x.get('handled_by') else ''}</td>"
+        f"<td>{e(x['comment'])}</td></tr>"
         for x in d["parents"]
     ) or '<tr><td colspan="4" class="muted">No parent replies yet.</td></tr>'
     rules = ", ".join(f"{e(k)} v{e(v)}" for k, v in sorted(d["rules"].items()))

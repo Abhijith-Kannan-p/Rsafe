@@ -2,6 +2,7 @@ import { CheckCircle2, UserRound } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { GlassCard } from "../../components";
 import { IssuePanel } from "../../components/IssuePanel";
+import { ParentRequests } from "../../components/ParentRequests";
 import { ErrorNote, Loading, PageHeader } from "../../components/ui";
 import type { IssueBrief, MyClasses } from "../../lib/api";
 import { cn } from "../../lib/cn";
@@ -72,6 +73,8 @@ export function Classes() {
           </p>
         </GlassCard>
       )}
+
+      <ParentRequests className="mb-4" refreshKey={data.data} onOpen={open} />
 
       {d.classes.length === 0 && (
         <GlassCard className="text-mist">No classes are assigned to you in this school's timetable, so there are no students to show.</GlassCard>

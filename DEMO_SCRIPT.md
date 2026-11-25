@@ -127,6 +127,10 @@ npm run dev     # leave running
   - Click **Something is wrong**, type a short comment, then **Send me a code**.
   - Type the demo code shown on screen and click **Verify and send**.
   - Say: "This is a mockup. No SMS is sent, and the reply goes to the audit log without changing the record."
+  - Switch to **Principal**. The Dashboard now shows **Parent requests** with the comment and Ananya's
+    issue chip; click the chip to open the issue and fix it. Switch to **Teacher**: Ananya is in their
+    class 5B, so the same request appears on **My classes**. Press **Mark as handled**. Back on
+    **Student and Parent**, the page says the school handled it.
 - **Test submit:** as **Principal**, open **Export** and press **Test submit**. Every rule runs again and
   each row shows whether it would be sent, sent with a flag, likely rejected or held back. Nothing is
   exported.

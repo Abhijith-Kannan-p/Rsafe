@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button, DataTable, GlassCard, ReadinessRing, SeverityBadge, StatusPill, useToast, type Column } from "../../components";
 import { IssuePanel } from "../../components/IssuePanel";
+import { ParentRequests } from "../../components/ParentRequests";
 import { ErrorNote, Loading, PageHeader, Select, Stat } from "../../components/ui";
 import { TrendChart } from "../../components/TrendChart";
 import { overallReadiness, post, qs, type Issue, type SchoolSummary, type TrendPoint } from "../../lib/api";
@@ -194,6 +195,10 @@ export function Dashboard() {
             <TrendChart points={trend.data.points} title={`Readiness over time · ${trendSchool}`} />
           </div>
         </GlassCard>
+      )}
+
+      {(me.role === "principal" || me.role === "mis_coordinator") && (
+        <ParentRequests refreshKey={all.data} showSchool={multiSchool} onOpen={(id) => setFilter("issue", String(id))} />
       )}
 
       {held.length > 0 && (
