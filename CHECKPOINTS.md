@@ -810,3 +810,27 @@ tour still runs 10/10.
 - "Handled" is a staff acknowledgement, not a fix. Fixes still go through issues, so a request on a
   record with no Rsafe issue says to correct it in the school's own system and import again.
 - Admin does not get the panel. Admin sees the same events in the audit log.
+
+## Checkpoint: simpler status filter
+
+The issue list's Status filter had seven options, several of which overlapped. It now has five:
+
+| Option | Shows | Replaces |
+|---|---|---|
+| **Needs action** (default) | open and held | Needs action, and Open |
+| **Held for review** | held | Held |
+| **Decided by a person** | approved, confirmed or edited | Approved or confirmed, and Edited |
+| **Cleared on re-check** | resolved | Resolved |
+| **Everything** | all | Everything |
+
+The "Resolved" status pill now reads **Cleared**, to match the filter. The pill still separates Approved
+from Edited, and the Status column still shows who decided each issue.
+
+### How to verify
+As Principal, approve one issue that has a suggestion and confirm one that has none. Then step through
+the filter. I checked every option in Edge: each row count matched the API (10, 0, 2, 0, 12 on freshly
+seeded SYN-0002), with no console errors.
+
+### Decisions taken (ambiguities)
+- "Open" on its own was dropped. Needs action already shows it, and only held issues differ, which have
+  their own option.

@@ -277,8 +277,13 @@ only through Edit or Approve on an issue. The parent then sees that the school h
 report shows who handled each request (`GET /api/parent-requests`,
 `POST /api/parent-requests/{id}/handled`).
 
-The issue list's Status column also shows who decided each issue ("by Teacher", "by Principal"), and its
-filter lists confirmations under **Approved or confirmed**.
+The issue list's Status column also shows who decided each issue ("by Teacher", "by Principal"). Its
+Status filter has five options:
+- **Needs action:** open and held issues. This is the default.
+- **Held for review:** held issues only.
+- **Decided by a person:** approved, confirmed or edited.
+- **Cleared on re-check:** the problem no longer appears when the rules run.
+- **Everything:** all of the above.
 
 ## What is mocked
 

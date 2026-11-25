@@ -12,7 +12,7 @@ export type Status =
 
 const STYLE: Record<Status, { dot: string; cls: string; label: string }> = {
   ready: { dot: "bg-aqua", cls: "text-aqua bg-aqua/10", label: "Ready" },
-  verified: { dot: "bg-aqua", cls: "text-aqua bg-aqua/10", label: "Verified" },
+  verified: { dot: "bg-aqua", cls: "text-aqua bg-aqua/10", label: "Cleared" },
   approved: { dot: "bg-aqua", cls: "text-aqua bg-aqua/10", label: "Approved" },
   fixing: { dot: "bg-saffron", cls: "text-saffron bg-saffron/10", label: "Fixing" },
   edited: { dot: "bg-violet", cls: "text-violet bg-violet/10", label: "Edited" },

@@ -12,6 +12,7 @@ import { can, useIdentity } from "../../lib/session";
 import { useApi } from "../../lib/useApi";
 
 const ACTIVE = "active";
+const DECIDED = "decided"; // approved, confirmed or edited by a person
 
 /** Who decided an issue, as a role name ("Teacher", "Principal"). Empty when nobody has acted yet. */
 function decidedBy(i: Issue): string {
@@ -58,7 +59,11 @@ export function Dashboard() {
     const xs = all.data ?? [];
     return xs.filter(
       (i) =>
-        (filters.status === ACTIVE ? i.status === "open" || i.status === "held" : filters.status === "all" || i.status === filters.status) &&
+        (filters.status === ACTIVE
+          ? i.status === "open" || i.status === "held"
+          : filters.status === DECIDED
+            ? i.status === "approved" || i.status === "edited"
+            : filters.status === "all" || i.status === filters.status) &&
         (!filters.severity || i.severity === filters.severity) &&
         (!filters.rule_id || i.rule_id === filters.rule_id) &&
         (!filters.entity || i.entity === filters.entity),
@@ -120,7 +125,7 @@ export function Dashboard() {
         const by = decidedBy(i);
         return (
           <div className="flex flex-col items-start gap-1">
-            <StatusPill status={i.status === "resolved" ? "verified" : i.status} label={i.status === "resolved" ? "Resolved" : undefined} />
+            <StatusPill status={i.status === "resolved" ? "verified" : i.status} />
             {by && <span className="whitespace-nowrap text-xs text-mist" title={i.acted_by ?? undefined}>by {by}</span>}
           </div>
         );
@@ -254,12 +259,10 @@ export function Dashboard() {
           </Select>
           <Select label="Status" value={filters.status} onChange={(e) => setFilter("status", e.target.value === ACTIVE ? "" : e.target.value)}>
             <option value={ACTIVE}>Needs action</option>
+            <option value="held">Held for review</option>
+            <option value={DECIDED}>Decided by a person</option>
+            <option value="resolved">Cleared on re-check</option>
             <option value="all">Everything</option>
-            <option value="open">Open</option>
-            <option value="held">Held</option>
-            <option value="approved">Approved or confirmed</option>
-            <option value="edited">Edited</option>
-            <option value="resolved">Resolved</option>
           </Select>
         </div>
         {all.loading && !all.data ? (

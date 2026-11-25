@@ -188,7 +188,7 @@ export function IssuePanel({ issueId, onClose, onChanged }: Props) {
         <div>
           <div className="mb-5 flex flex-wrap items-center gap-2">
             <SeverityBadge severity={issue.severity} />
-            <StatusPill status={issue.status === "resolved" ? "verified" : issue.status} label={issue.status === "resolved" ? "Resolved" : undefined} />
+            <StatusPill status={issue.status === "resolved" ? "verified" : issue.status} />
             <span className="rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-xs text-cream">
               {issue.rule_id} v{issue.rule_version}
             </span>
@@ -327,7 +327,7 @@ export function IssuePanel({ issueId, onClose, onChanged }: Props) {
           {!actionable && (
             <p className="rounded-2xl bg-white/[0.05] p-4 text-sm text-cream">
               {issue.status === "resolved"
-                ? "Resolved: the problem no longer appears when the rules run."
+                ? "Cleared: the problem no longer appears when the rules run."
                 : `${humanise(issue.status)} by ${issue.acted_by ?? "someone"}.`}
               {issue.note && <span className="mt-1 block text-mist">Note: {issue.note}</span>}
             </p>
